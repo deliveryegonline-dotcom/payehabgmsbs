@@ -28,6 +28,12 @@ import {
   handleRetryWebhook,
   handleListAuditLogs,
   handleSimulatorSendSms,
+  handleAdminSystemHealth,
+  handleAdminTriggerCron,
+  handleListAllMerchants,
+  handleBindWalletsToDevice,
+  handleGetAndroidAppConfig,
+  handleGetEnvStatus,
 } from './src/server/routes/merchantRoutes.ts';
 
 dotenv.config();
@@ -112,6 +118,8 @@ app.get('/api/merchant/payments', handleListMerchantPayments);
 app.post('/api/merchant/payments/create', handleCreatePayment);
 app.get('/api/merchant/devices', handleListDevices);
 app.post('/api/merchant/devices/generate-pairing', handleGeneratePairingCode);
+app.post('/api/merchant/devices/:id/bind-wallets', handleBindWalletsToDevice);
+app.get('/api/merchant/devices/:id/android-config', handleGetAndroidAppConfig);
 app.get('/api/merchant/wallets', handleListWallets);
 app.post('/api/merchant/wallets', handleCreateWallet);
 app.get('/api/merchant/api-keys', handleListApiKeys);
@@ -123,6 +131,10 @@ app.post('/api/merchant/review-queue/:id/reject', handleRejectReview);
 app.get('/api/merchant/webhook-logs', handleListWebhookLogs);
 app.post('/api/merchant/webhook-logs/:id/retry', handleRetryWebhook);
 app.get('/api/admin/audit-logs', handleListAuditLogs);
+app.get('/api/admin/system-health', handleAdminSystemHealth);
+app.post('/api/admin/trigger-cron', handleAdminTriggerCron);
+app.get('/api/admin/merchants', handleListAllMerchants);
+app.get('/api/admin/env-status', handleGetEnvStatus);
 
 // Built-in device & SMS testing simulator
 app.post('/api/simulator/send-sms', handleSimulatorSendSms);

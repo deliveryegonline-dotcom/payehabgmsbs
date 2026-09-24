@@ -44,6 +44,7 @@ export interface DeviceRecord {
   pairedAt?: string | null;
   lastSeenAt?: string | null;
   status: 'active' | 'revoked';
+  boundWalletIds?: string[];
   createdAt: string;
 }
 

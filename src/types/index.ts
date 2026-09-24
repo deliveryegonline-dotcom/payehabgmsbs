@@ -31,6 +31,7 @@ export interface Device {
   pairedAt?: string | null;
   lastSeenAt?: string | null;
   status: 'active' | 'revoked';
+  boundWalletIds?: string[];
   createdAt: string;
 }
 
@@ -111,3 +112,43 @@ export interface DashboardStats {
   reviewQueueCount: number;
   totalSmsReceived: number;
 }
+
+export interface SystemHealthData {
+  service: string;
+  environment: string;
+  uptimeSeconds: number;
+  timestamp: string;
+  database: {
+    engine: string;
+    databaseId: string;
+    projectId: string;
+    isLiveConnected: boolean;
+    securityRules: string;
+    idempotencyStrategy: string;
+  };
+  metrics: {
+    totalMerchants: number;
+    totalPayments: number;
+    completedPayments: number;
+    pendingPayments: number;
+    reviewQueueCount: number;
+    activeDevices: number;
+    totalSmsProcessed: number;
+    totalWebhooksDispatched: number;
+  };
+}
+
+export interface MerchantSummary {
+  id: string;
+  name: string;
+  email: string;
+  webhookUrl?: string | null;
+  webhookSecret?: string | null;
+  totalPayments: number;
+  completedPayments: number;
+  totalVolume: number;
+  activeDevicesCount: number;
+  walletsCount: number;
+  createdAt: string;
+}
+

@@ -100,6 +100,7 @@ class DatabaseStore {
       pairedAt: now,
       lastSeenAt: now,
       status: 'active',
+      boundWalletIds: [DEMO_WALLET_ID, 'w-demo-2002'],
       createdAt: now,
     });
 
@@ -367,6 +368,14 @@ class DatabaseStore {
     if (device) {
       device.lastSeenAt = new Date().toISOString();
     }
+  }
+
+  bindWalletsToDevice(deviceId: string, walletIds: string[]): DeviceRecord | undefined {
+    const device = this.getDeviceById(deviceId);
+    if (!device) return undefined;
+    // Strict rule: maximum 2 wallets per device (e.g. SIM 1 + SIM 2)
+    device.boundWalletIds = walletIds.slice(0, 2);
+    return device;
   }
 
   // --- Payments & Piaster Generator ---

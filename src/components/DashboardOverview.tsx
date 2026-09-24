@@ -5,12 +5,15 @@ import {
   Clock,
   CheckCircle2,
   Smartphone,
-  AlertTriangle,
+  Wallet,
   ArrowUpRight,
   ExternalLink,
   Plus,
   Play,
   ShieldCheck,
+  Key,
+  QrCode,
+  Zap,
 } from 'lucide-react';
 import type { DashboardStats, Payment, Device } from '../types/index.ts';
 
@@ -37,18 +40,18 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
 }) => {
   return (
     <div className="space-y-8">
-      {/* Top Banner & Quick Actions */}
-      <div className="bg-gradient-to-l from-emerald-950/60 via-slate-900 to-slate-900 border border-emerald-500/20 rounded-3xl p-6 sm:p-8 shadow-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-6 relative overflow-hidden">
+      {/* Top Banner & Quick Actions for Merchant */}
+      <div className="bg-gradient-to-l from-emerald-950/70 via-slate-900 to-slate-900 border border-emerald-500/20 rounded-3xl p-6 sm:p-8 shadow-2xl flex flex-col md:flex-row items-start md:items-center justify-between gap-6 relative overflow-hidden">
         <div className="space-y-2 z-10">
           <div className="inline-flex items-center gap-2 bg-emerald-500/10 text-emerald-400 px-3 py-1 rounded-full text-xs font-semibold border border-emerald-500/20">
             <span className="w-2 h-2 rounded-full bg-emerald-400 animate-ping" />
-            بوابة EHABGM Pay متصلة وجاهزة
+            بوابة التاجر والعميل متصلة ومستعدة لاستقبال الأموال
           </div>
           <h2 className="text-2xl sm:text-3xl font-black text-white tracking-tight">
-            مرحباً بك في بوابة تأكيد مدفوعات المحافظ
+            مرحباً بك في بوابة مدفوعاتك الإلكترونية
           </h2>
-          <p className="text-xs sm:text-sm text-slate-300 max-w-xl">
-            نظام متكامل لتأكيد تحويلات فودافون كاش وإنستاباي عبر تخصيص القروش الفريدة واستقبال إشعارات الـ SMS المشفرة بـ HMAC.
+          <p className="text-xs sm:text-sm text-slate-300 max-w-xl leading-relaxed">
+            اربط محافظك (فودافون كاش، إنستاباي، اتصالات، أورنج)، واقترن بهاتفك عبر تطبيق الأندرويد لاستقبال إشعارات التحويل والتأكيد الآلي فورياً خلال ثوانٍ.
           </p>
         </div>
 
@@ -58,15 +61,104 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
             className="px-4 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl flex items-center gap-2 transition shadow-lg shadow-emerald-600/20"
           >
             <Plus className="w-4 h-4" />
-            إنشاء دفعة وقروش
+            إنشاء دفعة جديدة
           </button>
           <button
             onClick={onOpenSimulator}
             className="px-4 py-3 bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs rounded-xl flex items-center gap-2 transition border border-slate-700/60"
           >
             <Play className="w-4 h-4 fill-current text-emerald-400" />
-            محاكي الرسائل
+            تجربة محاكي الدفع
           </button>
+        </div>
+      </div>
+
+      {/* Quick Setup Wizard Steps (4 Steps to Start) */}
+      <div className="bg-slate-900/80 border border-slate-800 rounded-3xl p-6 shadow-xl space-y-4">
+        <div className="flex items-center justify-between">
+          <h3 className="text-sm font-bold text-white flex items-center gap-2">
+            <Zap className="w-4 h-4 text-emerald-400" />
+            <span>خطوات التفعيل السريع للتاجر (4 خطوات بسيطة)</span>
+          </h3>
+          <span className="text-xs text-slate-400">ابدأ في أقل من 3 دقائق</span>
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+          {/* Step 1 */}
+          <div
+            onClick={() => onSelectTab('wallets')}
+            className="p-4 bg-slate-950/80 border border-slate-800 hover:border-emerald-500/40 rounded-2xl cursor-pointer transition group"
+          >
+            <div className="flex items-center justify-between mb-2">
+              <span className="w-6 h-6 rounded-lg bg-emerald-500/10 text-emerald-400 font-bold text-xs flex items-center justify-center">
+                1
+              </span>
+              <Wallet className="w-4 h-4 text-slate-400 group-hover:text-emerald-400 transition" />
+            </div>
+            <h4 className="text-xs font-bold text-white group-hover:text-emerald-300">
+              ربط المحافظ الإلكترونية
+            </h4>
+            <p className="text-[11px] text-slate-400 mt-1">
+              أضف رقم فودافون كاش أو إنستاباي لاستقبال أموالك عليها مباشرة.
+            </p>
+          </div>
+
+          {/* Step 2 */}
+          <div
+            onClick={() => onSelectTab('devices')}
+            className="p-4 bg-slate-950/80 border border-slate-800 hover:border-emerald-500/40 rounded-2xl cursor-pointer transition group"
+          >
+            <div className="flex items-center justify-between mb-2">
+              <span className="w-6 h-6 rounded-lg bg-emerald-500/10 text-emerald-400 font-bold text-xs flex items-center justify-center">
+                2
+              </span>
+              <QrCode className="w-4 h-4 text-slate-400 group-hover:text-emerald-400 transition" />
+            </div>
+            <h4 className="text-xs font-bold text-white group-hover:text-emerald-300">
+              ربط الهاتف والتطبيق
+            </h4>
+            <p className="text-[11px] text-slate-400 mt-1">
+              ثبّت تطبيق قارئ الإشعارات واقترن فورياً برمز PIN أو QR Code.
+            </p>
+          </div>
+
+          {/* Step 3 */}
+          <div
+            onClick={onOpenSimulator}
+            className="p-4 bg-slate-950/80 border border-slate-800 hover:border-emerald-500/40 rounded-2xl cursor-pointer transition group"
+          >
+            <div className="flex items-center justify-between mb-2">
+              <span className="w-6 h-6 rounded-lg bg-emerald-500/10 text-emerald-400 font-bold text-xs flex items-center justify-center">
+                3
+              </span>
+              <Play className="w-4 h-4 text-slate-400 group-hover:text-emerald-400 transition" />
+            </div>
+            <h4 className="text-xs font-bold text-white group-hover:text-emerald-300">
+              تجربة المحاكي
+            </h4>
+            <p className="text-[11px] text-slate-400 mt-1">
+              أرسل رسالة تجريبية للتأكد من وصول الإشعار وتأكيد الدفعة فوراً.
+            </p>
+          </div>
+
+          {/* Step 4 */}
+          <div
+            onClick={() => onSelectTab('api-keys')}
+            className="p-4 bg-slate-950/80 border border-slate-800 hover:border-emerald-500/40 rounded-2xl cursor-pointer transition group"
+          >
+            <div className="flex items-center justify-between mb-2">
+              <span className="w-6 h-6 rounded-lg bg-emerald-500/10 text-emerald-400 font-bold text-xs flex items-center justify-center">
+                4
+              </span>
+              <Key className="w-4 h-4 text-slate-400 group-hover:text-emerald-400 transition" />
+            </div>
+            <h4 className="text-xs font-bold text-white group-hover:text-emerald-300">
+              مفاتيح الربط والـ API
+            </h4>
+            <p className="text-[11px] text-slate-400 mt-1">
+              احصل على مفتاح الـ API والويب هوك لربط موقعك أو متجرك الإلكتروني.
+            </p>
+          </div>
         </div>
       </div>
 
@@ -124,21 +216,21 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
 
         {/* Metric 4 */}
         <div
-          onClick={() => onSelectTab('review')}
-          className="bg-slate-900 border border-slate-800 hover:border-amber-500/40 rounded-2xl p-5 shadow-xl space-y-2 cursor-pointer transition group"
+          onClick={() => onSelectTab('devices')}
+          className="bg-slate-900 border border-slate-800 hover:border-emerald-500/40 rounded-2xl p-5 shadow-xl space-y-2 cursor-pointer transition group"
         >
           <div className="flex items-center justify-between text-slate-400">
-            <span className="text-xs font-medium">طابور المراجعة اليدوية</span>
-            <div className="p-2 rounded-xl bg-purple-500/10 text-purple-400 border border-purple-500/20 group-hover:scale-105 transition-transform">
-              <AlertTriangle className="w-4 h-4 text-amber-400" />
+            <span className="text-xs font-medium">الأجهزة المتصلة النشطة</span>
+            <div className="p-2 rounded-xl bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 group-hover:scale-105 transition-transform">
+              <Smartphone className="w-4 h-4 text-cyan-400" />
             </div>
           </div>
-          <div className="text-2xl sm:text-3xl font-black text-amber-400 font-mono">
-            {stats.reviewQueueCount}
+          <div className="text-2xl sm:text-3xl font-black text-cyan-400 font-mono">
+            {stats.activeDevices}
           </div>
           <div className="text-[11px] text-slate-400 flex items-center justify-between">
-            <span>رسائل بانتظار البت</span>
-            <ArrowUpRight className="w-3.5 h-3.5 text-amber-400" />
+            <span>تستقبل رسائل المحفظة</span>
+            <ArrowUpRight className="w-3.5 h-3.5 text-cyan-400" />
           </div>
         </div>
       </div>
@@ -243,10 +335,10 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
 
           <div className="pt-2">
             <button
-              onClick={() => onSelectTab('docs')}
+              onClick={() => onSelectTab('devices')}
               className="w-full py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold rounded-xl transition flex items-center justify-center gap-1.5"
             >
-              عرض دليل ربط تطبيق الـ Forwarder
+              إدارة أجهزة الهاتف وتطبيق الأندرويد
             </button>
           </div>
         </div>
