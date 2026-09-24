@@ -35,6 +35,8 @@ import {
   handleBindWalletsToDevice,
   handleGetAndroidAppConfig,
   handleGetEnvStatus,
+  handleDevicePingTest,
+  handleDeviceSimulateDisconnect,
 } from './src/server/routes/merchantRoutes.ts';
 
 dotenv.config();
@@ -122,6 +124,8 @@ app.get('/api/merchant/devices', handleListDevices);
 app.post('/api/merchant/devices/generate-pairing', handleGeneratePairingCode);
 app.post('/api/merchant/devices/:id/bind-wallets', handleBindWalletsToDevice);
 app.get('/api/merchant/devices/:id/android-config', handleGetAndroidAppConfig);
+app.post('/api/merchant/devices/:id/ping-test', handleDevicePingTest);
+app.post('/api/merchant/devices/:id/simulate-disconnect', handleDeviceSimulateDisconnect);
 app.get('/api/merchant/wallets', handleListWallets);
 app.post('/api/merchant/wallets', handleCreateWallet);
 app.get('/api/merchant/api-keys', handleListApiKeys);

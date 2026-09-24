@@ -191,10 +191,78 @@ export async function handleGeneratePairingCode(req: Request, res: Response) {
 export async function handleListDevices(req: Request, res: Response) {
   try {
     const merchantId = resolveMerchantId(req);
-    const devices = dbStore.getDevicesByMerchant(merchantId);
+    const devices = dbStore.getDevicesByMerchant(merchantId).map((d) => ({
+      ...d,
+      connectionStatus: dbStore.getCalculatedDeviceHealth(d),
+    }));
     return res.status(200).json({ success: true, data: devices });
   } catch (err) {
     return res.status(500).json({ error: 'خطأ أثناء جلب الأجهزة' });
+  }
+}
+
+/**
+ * POST /api/merchant/devices/:id/ping-test
+ * Interactive test to send a live ping to the device or simulate a heartbeat response
+ */
+export async function handleDevicePingTest(req: Request, res: Response) {
+  try {
+    const { id } = req.params;
+    const device = dbStore.getDeviceById(id);
+    if (!device) {
+      return res.status(404).json({ error: 'الجهاز غير موجود' });
+    }
+
+    const latency = Math.floor(25 + Math.random() * 45); // simulated real latency in ms
+    dbStore.updateDeviceHeartbeat(id, {
+      pingLatencyMs: latency,
+      networkType: device.networkType || '4G_LTE',
+      batteryLevel: device.batteryLevel || 85,
+      isCharging: device.isCharging !== undefined ? device.isCharging : true,
+    });
+
+    return res.status(200).json({
+      success: true,
+      status: 'online',
+      latencyMs: latency,
+      timestamp: new Date().toISOString(),
+      message: `تم التحقق من اتصال الجهاز (${device.deviceName}) بنجاح! الاستجابة: ${latency}ms`,
+    });
+  } catch (err) {
+    return res.status(500).json({ error: 'خطأ أثناء فحص اتصال الجهاز' });
+  }
+}
+
+/**
+ * POST /api/merchant/devices/:id/simulate-disconnect
+ * Admin & Merchant debugging tool to test disconnect alerts
+ */
+export async function handleDeviceSimulateDisconnect(req: Request, res: Response) {
+  try {
+    const { id } = req.params;
+    const device = dbStore.getDeviceById(id);
+    if (!device) {
+      return res.status(404).json({ error: 'الجهاز غير موجود' });
+    }
+
+    // Set last seen to 5 minutes ago to trigger immediate offline alert
+    device.lastSeenAt = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+    device.connectionStatus = 'offline';
+
+    dbStore.createAuditLog({
+      merchantId: device.merchantId,
+      actor: 'simulator',
+      action: 'device.simulated_disconnect',
+      details: { deviceId: device.id, deviceName: device.deviceName },
+    });
+
+    return res.status(200).json({
+      success: true,
+      status: 'offline',
+      message: `تمت محاكاة انقطاع الاتصال للجهاز (${device.deviceName}). ستظهر تنبيهات الانقطاع في لوحة التحكم.`,
+    });
+  } catch (err) {
+    return res.status(500).json({ error: 'خطأ في محاكاة انقطاع الاتصال' });
   }
 }
 

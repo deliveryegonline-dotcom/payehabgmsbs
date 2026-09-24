@@ -22,6 +22,15 @@ export interface ApiKeyRecord {
   createdAt: string;
 }
 
+export interface SimCardRecord {
+  slotIndex: number;
+  carrierName: string;
+  phoneNumber: string;
+  provider: 'vodafone_cash' | 'instapay' | 'orange_cash' | 'etisalat_cash';
+  signalStrength?: number;
+  isDefault?: boolean;
+}
+
 export interface WalletRecord {
   id: string;
   merchantId: string;
@@ -30,6 +39,9 @@ export interface WalletRecord {
   label: string;
   isActive: boolean;
   isDefault: boolean;
+  detectedFromDevice?: boolean;
+  deviceId?: string | null;
+  simSlot?: number | null;
   createdAt: string;
 }
 
@@ -49,6 +61,11 @@ export interface DeviceRecord {
   isCharging?: boolean;
   networkType?: string;
   appVersion?: string;
+  ipAddress?: string;
+  pingLatencyMs?: number;
+  simCards?: SimCardRecord[];
+  pendingOfflineSmsCount?: number;
+  connectionStatus?: 'online' | 'warning' | 'offline';
   createdAt: string;
 }
 

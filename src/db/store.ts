@@ -88,7 +88,7 @@ class DatabaseStore {
       createdAt: now,
     });
 
-    // 4. Demo Paired Device
+    // 4. Demo Paired Device with detected SIMs
     this.devices.push({
       id: DEMO_DEVICE_ID,
       merchantId: DEMO_MERCHANT_ID,
@@ -100,7 +100,33 @@ class DatabaseStore {
       pairedAt: now,
       lastSeenAt: now,
       status: 'active',
+      batteryLevel: 89,
+      isCharging: true,
+      networkType: '4G_LTE',
+      appVersion: '1.2.0',
+      ipAddress: '197.38.120.45',
+      pingLatencyMs: 42,
+      connectionStatus: 'online',
+      pendingOfflineSmsCount: 0,
       boundWalletIds: [DEMO_WALLET_ID, 'w-demo-2002'],
+      simCards: [
+        {
+          slotIndex: 0,
+          carrierName: 'Vodafone Egypt',
+          phoneNumber: '01098765432',
+          provider: 'vodafone_cash',
+          signalStrength: 95,
+          isDefault: true,
+        },
+        {
+          slotIndex: 1,
+          carrierName: 'Orange EG / InstaPay',
+          phoneNumber: '01234567890',
+          provider: 'orange_cash',
+          signalStrength: 88,
+          isDefault: false,
+        },
+      ],
       createdAt: now,
     });
 
@@ -367,18 +393,95 @@ class DatabaseStore {
     const device = this.getDeviceById(deviceId);
     if (device) {
       device.lastSeenAt = new Date().toISOString();
+      device.connectionStatus = 'online';
     }
   }
 
-  updateDeviceHeartbeat(deviceId: string, info: { batteryLevel?: number; isCharging?: boolean; networkType?: string; appVersion?: string }) {
+  updateDeviceHeartbeat(
+    deviceId: string,
+    info: {
+      batteryLevel?: number;
+      isCharging?: boolean;
+      networkType?: string;
+      appVersion?: string;
+      ipAddress?: string;
+      pingLatencyMs?: number;
+      pendingOfflineSmsCount?: number;
+      simCards?: Array<{
+        slotIndex: number;
+        carrierName: string;
+        phoneNumber: string;
+        provider: 'vodafone_cash' | 'instapay' | 'orange_cash' | 'etisalat_cash';
+        signalStrength?: number;
+        isDefault?: boolean;
+      }>;
+    },
+  ) {
     const device = this.getDeviceById(deviceId);
     if (device) {
       device.lastSeenAt = new Date().toISOString();
+      device.connectionStatus = 'online';
       if (typeof info.batteryLevel === 'number') device.batteryLevel = info.batteryLevel;
       if (typeof info.isCharging === 'boolean') device.isCharging = info.isCharging;
       if (info.networkType) device.networkType = info.networkType;
+      if (info.appVersion) device.appVersion = info.appVersion;
+      if (info.ipAddress) device.ipAddress = info.ipAddress;
+      if (typeof info.pingLatencyMs === 'number') device.pingLatencyMs = info.pingLatencyMs;
+      if (typeof info.pendingOfflineSmsCount === 'number') device.pendingOfflineSmsCount = info.pendingOfflineSmsCount;
+
+      // Update SIM cards & auto-sync as merchant wallets
+      if (Array.isArray(info.simCards) && info.simCards.length > 0) {
+        device.simCards = info.simCards;
+
+        // Auto-register/sync detected SIM numbers as merchant wallets
+        const boundIds: string[] = [];
+        for (const sim of info.simCards) {
+          if (!sim.phoneNumber) continue;
+          let existingWallet = this.wallets.find(
+            (w) => w.merchantId === device.merchantId && w.identifier === sim.phoneNumber,
+          );
+          if (!existingWallet) {
+            const providerName =
+              sim.provider === 'vodafone_cash'
+                ? 'فودافون كاش'
+                : sim.provider === 'orange_cash'
+                ? 'أورنچ كاش'
+                : sim.provider === 'etisalat_cash'
+                ? 'إي آند كاش'
+                : 'إنستاباي';
+            existingWallet = this.createWallet({
+              merchantId: device.merchantId,
+              provider: sim.provider,
+              identifier: sim.phoneNumber,
+              label: `${providerName} (شريحة SIM ${sim.slotIndex + 1} المكتشفة)`,
+              isActive: true,
+              isDefault: sim.isDefault || false,
+            });
+            existingWallet.detectedFromDevice = true;
+            existingWallet.deviceId = device.id;
+            existingWallet.simSlot = sim.slotIndex;
+          } else {
+            existingWallet.detectedFromDevice = true;
+            existingWallet.deviceId = device.id;
+            existingWallet.simSlot = sim.slotIndex;
+          }
+          boundIds.push(existingWallet.id);
+        }
+        if (boundIds.length > 0) {
+          device.boundWalletIds = boundIds.slice(0, 2);
+        }
+      }
     }
     return device;
+  }
+
+  getCalculatedDeviceHealth(device: DeviceRecord): 'online' | 'warning' | 'offline' {
+    if (device.status === 'revoked' || !device.isPaired) return 'offline';
+    if (!device.lastSeenAt) return 'offline';
+    const diffSeconds = (Date.now() - new Date(device.lastSeenAt).getTime()) / 1000;
+    if (diffSeconds < 60) return 'online';
+    if (diffSeconds < 180) return 'warning';
+    return 'offline';
   }
 
   bindWalletsToDevice(deviceId: string, walletIds: string[]): DeviceRecord | undefined {

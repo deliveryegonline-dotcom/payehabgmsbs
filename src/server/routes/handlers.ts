@@ -139,31 +139,54 @@ export async function handleDeviceSms(req: Request, res: Response) {
 
 /**
  * POST /api/device/heartbeat
- * Android phone background ping to update battery & connectivity
+ * Android phone background ping to update battery, connectivity & detected SIM cards
  */
 export async function handleDeviceHeartbeat(req: Request, res: Response) {
   try {
     const deviceId = (req.headers['x-device-id'] as string) || req.body.deviceId;
-    const { batteryLevel, isCharging, networkType, appVersion } = req.body || {};
+    const {
+      batteryLevel,
+      isCharging,
+      networkType,
+      appVersion,
+      ipAddress,
+      pingLatencyMs,
+      pendingOfflineSmsCount,
+      simCards,
+    } = req.body || {};
 
     if (!deviceId) {
       return res.status(400).json({ error: 'معرف الجهاز مطلوب (deviceId is required)' });
     }
+
+    const clientIp = (req.headers['x-forwarded-for'] as string)?.split(',')[0] || req.socket.remoteAddress || ipAddress;
 
     const updated = dbStore.updateDeviceHeartbeat(deviceId, {
       batteryLevel: typeof batteryLevel === 'number' ? batteryLevel : undefined,
       isCharging: typeof isCharging === 'boolean' ? isCharging : undefined,
       networkType: networkType ? String(networkType) : undefined,
       appVersion: appVersion ? String(appVersion) : undefined,
+      ipAddress: clientIp,
+      pingLatencyMs: typeof pingLatencyMs === 'number' ? pingLatencyMs : undefined,
+      pendingOfflineSmsCount: typeof pendingOfflineSmsCount === 'number' ? pendingOfflineSmsCount : undefined,
+      simCards: Array.isArray(simCards) ? simCards : undefined,
     });
 
     if (!updated) {
       return res.status(404).json({ error: 'الجهاز غير مسجل' });
     }
 
+    const merchantWallets = dbStore.getWalletsByMerchant(updated.merchantId);
+
     return res.status(200).json({
       success: true,
       status: 'online',
+      deviceId: updated.id,
+      deviceName: updated.deviceName,
+      merchantId: updated.merchantId,
+      boundWalletIds: updated.boundWalletIds || [],
+      simCards: updated.simCards || [],
+      activeWallets: merchantWallets,
       serverTime: new Date().toISOString(),
     });
   } catch (err) {

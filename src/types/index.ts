@@ -20,6 +20,15 @@ export interface Payment {
   updatedAt: string;
 }
 
+export interface SimCardInfo {
+  slotIndex: number; // 0 for SIM 1, 1 for SIM 2
+  carrierName: string; // e.g. "Vodafone Egypt", "Orange EG", "e& Egypt", "WE Egypt"
+  phoneNumber: string; // e.g. "01098765432"
+  provider: 'vodafone_cash' | 'instapay' | 'orange_cash' | 'etisalat_cash';
+  signalStrength?: number; // 0 - 100% or dBm
+  isDefault?: boolean;
+}
+
 export interface Device {
   id: string;
   merchantId: string;
@@ -34,8 +43,13 @@ export interface Device {
   boundWalletIds?: string[];
   batteryLevel?: number;
   isCharging?: boolean;
-  networkType?: string;
+  networkType?: string; // '4G_LTE' | '5G' | 'WIFI' | 'OFFLINE'
   appVersion?: string;
+  ipAddress?: string;
+  pingLatencyMs?: number;
+  simCards?: SimCardInfo[];
+  pendingOfflineSmsCount?: number;
+  connectionStatus?: 'online' | 'warning' | 'offline';
   createdAt: string;
 }
 
@@ -47,6 +61,9 @@ export interface Wallet {
   label: string;
   isActive: boolean;
   isDefault: boolean;
+  detectedFromDevice?: boolean;
+  deviceId?: string | null;
+  simSlot?: number | null;
   createdAt: string;
 }
 
