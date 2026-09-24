@@ -11,6 +11,7 @@ import { CreatePaymentModal } from './components/CreatePaymentModal.tsx';
 import { DevicePairingModal } from './components/DevicePairingModal.tsx';
 import { SmsSimulatorModal } from './components/SmsSimulatorModal.tsx';
 import { AdminPortal } from './components/AdminPortal.tsx';
+import { AuthProvider, useAuth } from './context/AuthContext.tsx';
 import type {
   Payment,
   Device,
@@ -23,7 +24,9 @@ import type {
   SystemHealthData,
 } from './types/index.ts';
 
-export default function App() {
+function AppContent() {
+  const { user, merchantId: currentMerchantId } = useAuth();
+
   // Check if current route is /admin or /c/:id or /
   const [isAdminView, setIsAdminView] = useState<boolean>(() => {
     return window.location.pathname.startsWith('/admin');
@@ -211,10 +214,16 @@ export default function App() {
   const [pairModalOpen, setPairModalOpen] = useState(false);
   const [simulatorOpen, setSimulatorOpen] = useState(false);
 
-  // Helper for resilient API calls
+  // Helper for resilient API calls with authenticated Merchant ID
   const safeFetch = async <T,>(url: string, fallback: T): Promise<T> => {
     try {
-      const res = await fetch(url);
+      const headers: Record<string, string> = {
+        'x-merchant-id': currentMerchantId,
+      };
+      if (user?.email) {
+        headers['x-user-email'] = user.email;
+      }
+      const res = await fetch(url, { headers });
       if (!res.ok) return fallback;
       const data = await res.json();
       return data;
@@ -287,7 +296,7 @@ export default function App() {
     // Background polling every 10 seconds to keep live data fresh
     const interval = setInterval(fetchDashboardData, 10000);
     return () => clearInterval(interval);
-  }, []);
+  }, [currentMerchantId, user?.email]);
 
   // Handle URL change or history popstate
   useEffect(() => {
@@ -465,5 +474,13 @@ export default function App() {
         </div>
       </footer>
     </div>
+  );
+}
+
+export default function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   );
 }

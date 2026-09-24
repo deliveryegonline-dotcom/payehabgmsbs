@@ -14,7 +14,10 @@ import {
   Key,
   QrCode,
   Zap,
+  LogIn,
+  Check,
 } from 'lucide-react';
+import { useAuth } from '../context/AuthContext.tsx';
 import type { DashboardStats, Payment, Device } from '../types/index.ts';
 
 interface DashboardOverviewProps {
@@ -38,6 +41,7 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
   onOpenCheckout,
   onSelectTab,
 }) => {
+  const { user, isAdmin, signInWithGoogle } = useAuth();
   return (
     <div className="space-y-8">
       {/* Top Banner & Quick Actions for Merchant */}
@@ -71,6 +75,42 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
             تجربة محاكي الدفع
           </button>
         </div>
+      </div>
+
+      {/* Google Authentication Account Status Box */}
+      <div className={`p-5 rounded-3xl border ${user ? 'bg-slate-900/90 border-emerald-500/30' : 'bg-gradient-to-r from-emerald-950/40 to-slate-900 border-amber-500/30'} flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-xl`}>
+        <div className="flex items-center gap-3">
+          <div className={`w-10 h-10 rounded-2xl flex items-center justify-center ${user ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-amber-500/20 text-amber-400 border border-amber-500/30'}`}>
+            {user ? <Check className="w-5 h-5" /> : <LogIn className="w-5 h-5" />}
+          </div>
+          <div>
+            <h4 className="text-sm font-bold text-white flex items-center gap-2">
+              {user ? (
+                <>
+                  <span>حساب جوجل متصل:</span>
+                  <span className="text-emerald-400 font-mono text-xs">{user.email}</span>
+                </>
+              ) : (
+                'سجّل دخولك بحساب Google لربط محافظك الحقيقية'
+              )}
+            </h4>
+            <p className="text-xs text-slate-400 mt-0.5">
+              {user
+                ? (isAdmin ? 'لديك صلاحيات إدارة النظام المركزية ehabgm200@gmail.com' : 'بياناتك ومحافظك وهواتفك ومفاتيح API محفوظة بأمان في قاعدة بيانات Firestore الحقيقية.')
+                : 'تسجيل الدخول بنقرة واحدة عبر حساب جوجل لحفظ بياناتك ومحافظك ومزامنتها مع تطبيق الأندرويد.'}
+            </p>
+          </div>
+        </div>
+
+        {!user && (
+          <button
+            onClick={signInWithGoogle}
+            className="px-4 py-2.5 bg-white hover:bg-slate-100 text-slate-950 font-bold text-xs rounded-xl flex items-center gap-2 transition shadow-md whitespace-nowrap self-stretch sm:self-auto justify-center"
+          >
+            <LogIn className="w-4 h-4 text-slate-950" />
+            <span>تسجيل الدخول الفوري بجوجل</span>
+          </button>
+        )}
       </div>
 
       {/* Quick Setup Wizard Steps (4 Steps to Start) */}

@@ -12,8 +12,11 @@ import {
   Play,
   Plus,
   ShieldAlert,
-  ArrowLeft,
+  LogOut,
+  LogIn,
+  User as UserIcon,
 } from 'lucide-react';
+import { useAuth } from '../context/AuthContext.tsx';
 
 interface NavbarProps {
   currentTab: string;
@@ -31,6 +34,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onSwitchToAdmin,
 }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { user, isAdmin, signInWithGoogle, logout } = useAuth();
 
   const merchantNavItems = [
     { id: 'overview', label: 'نظرة عامة', icon: LayoutDashboard },
@@ -87,7 +91,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             })}
           </div>
 
-          {/* Header Action Buttons */}
+          {/* Header Action Buttons & Auth */}
           <div className="hidden sm:flex items-center gap-2">
             <button
               onClick={onOpenSimulator}
@@ -108,16 +112,64 @@ export const Navbar: React.FC<NavbarProps> = ({
             {/* Switch to Admin Panel Button */}
             <button
               onClick={onSwitchToAdmin}
-              className="px-3.5 py-2 bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/40 text-xs font-bold rounded-xl flex items-center gap-1.5 transition shadow-sm"
+              className="px-3 py-2 bg-indigo-600/20 hover:bg-indigo-600/30 text-indigo-300 border border-indigo-500/40 text-xs font-bold rounded-xl flex items-center gap-1.5 transition shadow-sm"
               title="الانتقال إلى لوحة الإدارة والمتابعة المركزية"
             >
               <ShieldAlert className="w-3.5 h-3.5 text-indigo-400" />
-              <span>لوحة الإدارة /admin</span>
+              <span>لوحة الإدارة</span>
             </button>
+
+            {/* Google Authentication Section */}
+            {user ? (
+              <div className="flex items-center gap-2 pr-2 border-r border-slate-800 mr-1">
+                {user.photoURL ? (
+                  <img
+                    src={user.photoURL}
+                    alt={user.displayName || 'User'}
+                    className="w-8 h-8 rounded-full border border-emerald-500/40"
+                  />
+                ) : (
+                  <div className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center text-slate-300">
+                    <UserIcon className="w-4 h-4" />
+                  </div>
+                )}
+                <div className="hidden xl:block text-right">
+                  <span className="text-xs font-bold text-white block truncate max-w-[130px]">
+                    {user.displayName || user.email?.split('@')[0]}
+                  </span>
+                  <span className={`text-[10px] block ${isAdmin ? 'text-indigo-400 font-bold' : 'text-emerald-400'}`}>
+                    {isAdmin ? 'مدير المنصة ehabgm200' : 'تاجر معتمد'}
+                  </span>
+                </div>
+                <button
+                  onClick={logout}
+                  title="تسجيل الخروج"
+                  className="p-2 text-slate-400 hover:text-rose-400 bg-slate-800/80 hover:bg-slate-800 rounded-xl transition"
+                >
+                  <LogOut className="w-4 h-4" />
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={signInWithGoogle}
+                className="px-3.5 py-2 bg-white hover:bg-slate-100 text-slate-900 text-xs font-bold rounded-xl flex items-center gap-2 transition shadow-md"
+              >
+                <LogIn className="w-3.5 h-3.5 text-slate-900" />
+                <span>تسجيل الدخول بجوجل</span>
+              </button>
+            )}
           </div>
 
           {/* Mobile hamburger button */}
           <div className="flex lg:hidden items-center gap-2">
+            {!user && (
+              <button
+                onClick={signInWithGoogle}
+                className="px-2.5 py-1 bg-white text-slate-900 text-xs font-bold rounded-lg"
+              >
+                دخول
+              </button>
+            )}
             <button
               onClick={onSwitchToAdmin}
               className="px-2.5 py-1 bg-indigo-600/20 text-indigo-300 border border-indigo-500/40 text-xs font-bold rounded-lg"
@@ -137,6 +189,28 @@ export const Navbar: React.FC<NavbarProps> = ({
       {/* Mobile Drawer Menu */}
       {mobileMenuOpen && (
         <div className="lg:hidden bg-slate-900 border-b border-slate-800 px-4 pt-2 pb-6 space-y-2 animate-fadeIn">
+          {user && (
+            <div className="flex items-center justify-between p-3 bg-slate-950 rounded-2xl mb-2 border border-slate-800">
+              <div className="flex items-center gap-2.5">
+                {user.photoURL ? (
+                  <img src={user.photoURL} alt="User" className="w-8 h-8 rounded-full" />
+                ) : (
+                  <div className="w-8 h-8 rounded-full bg-slate-800 flex items-center justify-center">
+                    <UserIcon className="w-4 h-4 text-slate-300" />
+                  </div>
+                )}
+                <div>
+                  <span className="text-xs font-bold text-white block">{user.displayName || user.email}</span>
+                  <span className="text-[10px] text-emerald-400">{isAdmin ? 'مدير المنصة' : 'حساب تاجر'}</span>
+                </div>
+              </div>
+              <button onClick={logout} className="text-xs text-rose-400 flex items-center gap-1 font-semibold">
+                <LogOut className="w-3.5 h-3.5" />
+                <span>خروج</span>
+              </button>
+            </div>
+          )}
+
           <div className="grid grid-cols-2 gap-2 mb-3">
             <button
               onClick={() => {
@@ -190,3 +264,4 @@ export const Navbar: React.FC<NavbarProps> = ({
     </nav>
   );
 };
+

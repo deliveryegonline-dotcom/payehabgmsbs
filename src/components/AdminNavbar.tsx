@@ -11,9 +11,13 @@ import {
   ArrowRight,
   Menu,
   X,
-  ExternalLink,
   Zap,
+  FolderGit2,
+  LogOut,
+  LogIn,
+  User as UserIcon,
 } from 'lucide-react';
+import { useAuth } from '../context/AuthContext.tsx';
 
 interface AdminNavbarProps {
   currentTab: string;
@@ -31,6 +35,7 @@ export const AdminNavbar: React.FC<AdminNavbarProps> = ({
   onSwitchToMerchantPortal,
 }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { user, isAdmin, signInWithGoogle, logout } = useAuth();
 
   const adminNavItems = [
     { id: 'admin-overview', label: 'صحة المنظومة والمراقبة', icon: LayoutDashboard },
@@ -40,11 +45,12 @@ export const AdminNavbar: React.FC<AdminNavbarProps> = ({
       icon: AlertTriangle,
       badge: reviewCount > 0 ? reviewCount : null,
     },
+    { id: 'admin-android-dev', label: 'كود تطبيق الأندرويد المفتوح', icon: FolderGit2 },
     { id: 'admin-sms', label: 'فحص وتدقيق SMS', icon: Layers },
     { id: 'admin-webhooks', label: 'مراقبة الويب هوك', icon: Send },
     { id: 'admin-audit', label: 'سجل التدقيق الأمني', icon: Shield },
     { id: 'admin-merchants', label: 'إدارة المتاجر والعملاء', icon: Users },
-    { id: 'admin-env-android', label: 'البيئة وتطبيق الأندرويد والربط', icon: Zap },
+    { id: 'admin-env-android', label: 'المتغيرات وبيئة الربط', icon: Zap },
   ];
 
   return (
@@ -62,11 +68,11 @@ export const AdminNavbar: React.FC<AdminNavbarProps> = ({
                   لوحة الإدارة المركزية
                 </span>
                 <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-indigo-500/20 text-indigo-300 border border-indigo-500/40">
-                  /admin
+                  ehabgm200@gmail.com
                 </span>
               </div>
               <span className="text-[11px] text-slate-400 block">
-                EHABGM Pay - إدارة المشروع والمتابعة والفحص
+                EHABGM Pay - إدارة المنظومة وكود تطبيق الأندرويد
               </span>
             </div>
           </div>
@@ -110,12 +116,33 @@ export const AdminNavbar: React.FC<AdminNavbarProps> = ({
 
             <button
               onClick={onSwitchToMerchantPortal}
-              className="px-3.5 py-1.5 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/40 text-xs font-bold rounded-xl flex items-center gap-1.5 transition shadow-sm"
+              className="px-3 py-1.5 bg-emerald-600/20 hover:bg-emerald-600/30 text-emerald-300 border border-emerald-500/40 text-xs font-bold rounded-xl flex items-center gap-1.5 transition shadow-sm"
               title="الانتقال إلى بوابة العميل وربط المحافظ"
             >
-              <span>بوابة العميل والتاجر</span>
+              <span>بوابة التاجر والعميل</span>
               <ArrowRight className="w-3.5 h-3.5 rotate-180" />
             </button>
+
+            {/* Auth Profile */}
+            {user ? (
+              <div className="flex items-center gap-2 pr-2 border-r border-slate-800">
+                <button
+                  onClick={logout}
+                  title="تسجيل الخروج"
+                  className="p-1.5 text-slate-400 hover:text-rose-400 bg-slate-800 rounded-lg transition"
+                >
+                  <LogOut className="w-4 h-4" />
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={signInWithGoogle}
+                className="px-3 py-1.5 bg-white text-slate-900 text-xs font-bold rounded-xl flex items-center gap-1.5"
+              >
+                <LogIn className="w-3 h-3" />
+                <span>دخول جوجل</span>
+              </button>
+            )}
           </div>
 
           {/* Mobile hamburger */}
@@ -124,7 +151,7 @@ export const AdminNavbar: React.FC<AdminNavbarProps> = ({
               onClick={onSwitchToMerchantPortal}
               className="px-2.5 py-1 bg-emerald-600/20 text-emerald-300 border border-emerald-500/30 text-xs font-bold rounded-lg"
             >
-              بوابة العميل
+              بوابة التاجر
             </button>
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -172,3 +199,4 @@ export const AdminNavbar: React.FC<AdminNavbarProps> = ({
     </nav>
   );
 };
+
