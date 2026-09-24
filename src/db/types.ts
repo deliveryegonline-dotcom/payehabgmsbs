@@ -45,6 +45,10 @@ export interface DeviceRecord {
   lastSeenAt?: string | null;
   status: 'active' | 'revoked';
   boundWalletIds?: string[];
+  batteryLevel?: number;
+  isCharging?: boolean;
+  networkType?: string;
+  appVersion?: string;
   createdAt: string;
 }
 

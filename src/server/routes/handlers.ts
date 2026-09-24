@@ -138,6 +138,41 @@ export async function handleDeviceSms(req: Request, res: Response) {
 }
 
 /**
+ * POST /api/device/heartbeat
+ * Android phone background ping to update battery & connectivity
+ */
+export async function handleDeviceHeartbeat(req: Request, res: Response) {
+  try {
+    const deviceId = (req.headers['x-device-id'] as string) || req.body.deviceId;
+    const { batteryLevel, isCharging, networkType, appVersion } = req.body || {};
+
+    if (!deviceId) {
+      return res.status(400).json({ error: 'معرف الجهاز مطلوب (deviceId is required)' });
+    }
+
+    const updated = dbStore.updateDeviceHeartbeat(deviceId, {
+      batteryLevel: typeof batteryLevel === 'number' ? batteryLevel : undefined,
+      isCharging: typeof isCharging === 'boolean' ? isCharging : undefined,
+      networkType: networkType ? String(networkType) : undefined,
+      appVersion: appVersion ? String(appVersion) : undefined,
+    });
+
+    if (!updated) {
+      return res.status(404).json({ error: 'الجهاز غير مسجل' });
+    }
+
+    return res.status(200).json({
+      success: true,
+      status: 'online',
+      serverTime: new Date().toISOString(),
+    });
+  } catch (err) {
+    console.error('[Device Heartbeat Error]:', err);
+    return res.status(500).json({ error: 'خطأ في معالجة النبضة' });
+  }
+}
+
+/**
  * POST /api/v1/payments
  * Create a new payment with unique payable amount (random unused piasters)
  */
@@ -351,9 +386,18 @@ export async function handleCronExpirePayments(req: Request, res: Response) {
   try {
     const cronSecret = process.env.CRON_SECRET;
     const authHeader = req.headers.authorization;
+    const querySecret = req.query.secret as string | undefined;
+    const customHeader = req.headers['x-cron-secret'] as string | undefined;
 
-    if (cronSecret && authHeader !== `Bearer ${cronSecret}`) {
-      return res.status(401).json({ error: 'Unauthorized cron request' });
+    if (cronSecret) {
+      const isAuthorized =
+        authHeader === `Bearer ${cronSecret}` ||
+        querySecret === cronSecret ||
+        customHeader === cronSecret;
+
+      if (!isAuthorized) {
+        return res.status(401).json({ error: 'Unauthorized cron request' });
+      }
     }
 
     const expiredCount = dbStore.expirePendingPayments();

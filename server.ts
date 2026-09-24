@@ -6,6 +6,7 @@ import dotenv from 'dotenv';
 import {
   handleDevicePair,
   handleDeviceSms,
+  handleDeviceHeartbeat,
   handleCreatePayment,
   handleGetPayment,
   handleCustomerVerifyPayment,
@@ -100,8 +101,9 @@ app.use((req, res, next) => {
 // 1. Device Pairing (POST /api/device/pair)
 app.post('/api/device/pair', handleDevicePair);
 
-// 2. Device SMS Ingestion (POST /api/device/sms)
+// 2. Device SMS Ingestion & Heartbeat (POST /api/device/sms, POST /api/device/heartbeat)
 app.post('/api/device/sms', handleDeviceSms);
+app.post('/api/device/heartbeat', handleDeviceHeartbeat);
 
 // 3. Payments API (POST /api/v1/payments & GET /api/v1/payments/:id)
 app.post('/api/v1/payments', handleCreatePayment);

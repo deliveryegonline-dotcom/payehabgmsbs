@@ -370,6 +370,17 @@ class DatabaseStore {
     }
   }
 
+  updateDeviceHeartbeat(deviceId: string, info: { batteryLevel?: number; isCharging?: boolean; networkType?: string; appVersion?: string }) {
+    const device = this.getDeviceById(deviceId);
+    if (device) {
+      device.lastSeenAt = new Date().toISOString();
+      if (typeof info.batteryLevel === 'number') device.batteryLevel = info.batteryLevel;
+      if (typeof info.isCharging === 'boolean') device.isCharging = info.isCharging;
+      if (info.networkType) device.networkType = info.networkType;
+    }
+    return device;
+  }
+
   bindWalletsToDevice(deviceId: string, walletIds: string[]): DeviceRecord | undefined {
     const device = this.getDeviceById(deviceId);
     if (!device) return undefined;
