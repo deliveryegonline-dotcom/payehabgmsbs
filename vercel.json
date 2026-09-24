@@ -1,0 +1,24 @@
+{
+  "version": 2,
+  "framework": "vite",
+  "crons": [
+    {
+      "path": "/api/cron/expire-payments",
+      "schedule": "*/5 * * * *"
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/api/(.*)",
+      "destination": "/api/$1"
+    },
+    {
+      "source": "/c/(.*)",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/(.*)",
+      "destination": "/index.html"
+    }
+  ]
+}

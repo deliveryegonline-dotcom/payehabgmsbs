@@ -1,0 +1,6 @@
+{
+  "name": "EHABGM Pay",
+  "description": "بوابة دفع متعددة التجار لتأكيد مدفوعات المحافظ الإلكترونية المصرية (فودافون كاش وإنستاباي) عبر مطابقة رسائل SMS والربط البرمجي.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

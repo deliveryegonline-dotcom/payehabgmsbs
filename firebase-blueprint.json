@@ -1,0 +1,159 @@
+{
+  "entities": {
+    "Merchant": {
+      "title": "Merchant",
+      "description": "Merchant account managing payment gateways and wallets",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "email": { "type": "string", "format": "email" },
+        "webhookUrl": { "type": "string" },
+        "webhookSecret": { "type": "string" },
+        "status": { "type": "string", "enum": ["active", "suspended"] },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "name", "email", "status", "createdAt"]
+    },
+    "Payment": {
+      "title": "Payment",
+      "description": "Financial payment record with unique reserved payable amount and status token",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "merchantId": { "type": "string" },
+        "walletId": { "type": "string" },
+        "orderRef": { "type": "string" },
+        "baseAmount": { "type": "number" },
+        "payableAmount": { "type": "number" },
+        "piasters": { "type": "integer" },
+        "currency": { "type": "string" },
+        "status": { "type": "string", "enum": ["pending", "completed", "expired", "cancelled", "review"] },
+        "statusToken": { "type": "string" },
+        "customerPhone": { "type": "string" },
+        "webhookUrl": { "type": "string" },
+        "expiresAt": { "type": "string" },
+        "confirmedAt": { "type": "string" },
+        "verifiedTransactionId": { "type": "string" },
+        "matchedSmsId": { "type": "string" },
+        "createdAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["id", "merchantId", "orderRef", "baseAmount", "payableAmount", "piasters", "status", "statusToken", "expiresAt", "createdAt"]
+    },
+    "PublicPaymentStatus": {
+      "title": "PublicPaymentStatus",
+      "description": "Minimal non-sensitive document holding status only, listened to by checkout client with unguessable token",
+      "type": "object",
+      "properties": {
+        "status": { "type": "string", "enum": ["pending", "completed", "expired", "cancelled", "review"] },
+        "confirmedAt": { "type": "string" },
+        "expiresAt": { "type": "string" },
+        "updatedAt": { "type": "string" }
+      },
+      "required": ["status", "expiresAt", "updatedAt"]
+    },
+    "ProcessedTransaction": {
+      "title": "ProcessedTransaction",
+      "description": "Idempotency record keyed by merchantId_transactionId to prevent duplicate SMS processing",
+      "type": "object",
+      "properties": {
+        "merchantId": { "type": "string" },
+        "transactionId": { "type": "string" },
+        "amount": { "type": "number" },
+        "sender": { "type": "string" },
+        "paymentId": { "type": "string" },
+        "processedAt": { "type": "string" }
+      },
+      "required": ["merchantId", "transactionId", "amount", "processedAt"]
+    },
+    "SmsLog": {
+      "title": "SmsLog",
+      "description": "Raw SMS notification received from paired Android device",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "deviceId": { "type": "string" },
+        "merchantId": { "type": "string" },
+        "sender": { "type": "string" },
+        "rawText": { "type": "string" },
+        "amount": { "type": "number" },
+        "counterpartyPhone": { "type": "string" },
+        "transactionId": { "type": "string" },
+        "receivedAt": { "type": "string" },
+        "matchStatus": { "type": "string", "enum": ["matched", "unmatched", "duplicate", "review"] },
+        "matchedPaymentId": { "type": "string" },
+        "reviewReason": { "type": "string" },
+        "processedAt": { "type": "string" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "merchantId", "sender", "amount", "transactionId", "matchStatus", "processedAt", "createdAt"]
+    },
+    "Device": {
+      "title": "Device",
+      "description": "Paired Android phone running SMS forwarder",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "merchantId": { "type": "string" },
+        "deviceName": { "type": "string" },
+        "deviceSecret": { "type": "string" },
+        "pairingCode": { "type": "string" },
+        "pairingCodeExpiresAt": { "type": "string" },
+        "isPaired": { "type": "boolean" },
+        "pairedAt": { "type": "string" },
+        "lastSeenAt": { "type": "string" },
+        "status": { "type": "string", "enum": ["active", "revoked"] },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "merchantId", "deviceName", "deviceSecret", "isPaired", "status", "createdAt"]
+    },
+    "Wallet": {
+      "title": "Wallet",
+      "description": "Receiving mobile wallet or InstaPay handle",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "merchantId": { "type": "string" },
+        "provider": { "type": "string", "enum": ["vodafone_cash", "instapay", "orange_cash", "etisalat_cash"] },
+        "identifier": { "type": "string" },
+        "label": { "type": "string" },
+        "isActive": { "type": "boolean" },
+        "isDefault": { "type": "boolean" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["id", "merchantId", "provider", "identifier", "label", "isActive", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/merchants/{merchantId}": {
+      "schema": { "$ref": "#/entities/Merchant" },
+      "description": "Merchant accounts (Server-side Admin SDK only)"
+    },
+    "/payments/{paymentId}": {
+      "schema": { "$ref": "#/entities/Payment" },
+      "description": "Financial payment transactions (Server-side Admin SDK only)"
+    },
+    "/public_payment_statuses/{statusToken}": {
+      "schema": { "$ref": "#/entities/PublicPaymentStatus" },
+      "description": "Minimal non-sensitive document containing only status, listened to by checkout page via onSnapshot"
+    },
+    "/processed_transactions/{idempotencyKey}": {
+      "schema": { "$ref": "#/entities/ProcessedTransaction" },
+      "description": "Idempotency tracking keyed by merchantId_transactionId (Server-side Admin SDK only)"
+    },
+    "/sms_logs/{smsLogId}": {
+      "schema": { "$ref": "#/entities/SmsLog" },
+      "description": "SMS ingestion logs (Server-side Admin SDK only)"
+    },
+    "/devices/{deviceId}": {
+      "schema": { "$ref": "#/entities/Device" },
+      "description": "Paired Android devices with HMAC secrets (Server-side Admin SDK only)"
+    },
+    "/wallets/{walletId}": {
+      "schema": { "$ref": "#/entities/Wallet" },
+      "description": "Receiving mobile wallets (Server-side Admin SDK only)"
+    }
+  }
+}
