@@ -9,7 +9,7 @@ import {
   BookOpen,
   Menu,
   X,
-  Play,
+  RefreshCw,
   Plus,
   ShieldAlert,
   LogOut,
@@ -22,7 +22,7 @@ interface NavbarProps {
   currentTab: string;
   onSelectTab: (tab: string) => void;
   onOpenCreateModal: () => void;
-  onOpenSimulator: () => void;
+  onRefreshData?: () => void;
   onSwitchToAdmin: () => void;
 }
 
@@ -30,11 +30,20 @@ export const Navbar: React.FC<NavbarProps> = ({
   currentTab,
   onSelectTab,
   onOpenCreateModal,
-  onOpenSimulator,
+  onRefreshData,
   onSwitchToAdmin,
 }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const { user, isAdmin, signInWithGoogle, logout } = useAuth();
+
+  const handleRefreshClick = () => {
+    if (onRefreshData) {
+      setIsRefreshing(true);
+      onRefreshData();
+      setTimeout(() => setIsRefreshing(false), 800);
+    }
+  };
 
   const merchantNavItems = [
     { id: 'overview', label: 'نظرة عامة', icon: LayoutDashboard },
@@ -43,6 +52,7 @@ export const Navbar: React.FC<NavbarProps> = ({
     { id: 'payments', label: 'المدفوعات والفواتير', icon: CreditCard },
     { id: 'api-keys', label: 'مفاتيح API والويب هوك', icon: Key },
     { id: 'docs', label: 'التوثيق البرمجي', icon: BookOpen },
+    { id: 'login', label: 'تسجيل الدخول', icon: LogIn },
   ];
 
   return (
@@ -93,13 +103,17 @@ export const Navbar: React.FC<NavbarProps> = ({
 
           {/* Header Action Buttons & Auth */}
           <div className="hidden sm:flex items-center gap-2">
-            <button
-              onClick={onOpenSimulator}
-              className="px-3 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-xl flex items-center gap-1.5 transition border border-slate-700/60"
-            >
-              <Play className="w-3.5 h-3.5 fill-current text-emerald-400" />
-              <span>محاكي التجربة</span>
-            </button>
+            {onRefreshData && (
+              <button
+                onClick={handleRefreshClick}
+                disabled={isRefreshing}
+                className="px-3 py-2 bg-slate-800 hover:bg-slate-700 disabled:opacity-50 text-slate-200 text-xs font-semibold rounded-xl flex items-center gap-1.5 transition border border-slate-700/60"
+                title="تحديث ومزامنة البيانات اللحظية"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 text-emerald-400 ${isRefreshing ? 'animate-spin' : ''}`} />
+                <span>مزامنة فورية</span>
+              </button>
+            )}
 
             <button
               onClick={onOpenCreateModal}
@@ -224,13 +238,13 @@ export const Navbar: React.FC<NavbarProps> = ({
             </button>
             <button
               onClick={() => {
-                onOpenSimulator();
+                handleRefreshClick();
                 setMobileMenuOpen(false);
               }}
               className="py-2.5 bg-slate-800 text-slate-200 text-xs font-semibold rounded-xl flex items-center justify-center gap-1.5"
             >
-              <Play className="w-3.5 h-3.5 text-emerald-400 fill-current" />
-              <span>محاكي التجربة</span>
+              <RefreshCw className={`w-3.5 h-3.5 text-emerald-400 ${isRefreshing ? 'animate-spin' : ''}`} />
+              <span>مزامنة فورية</span>
             </button>
           </div>
 

@@ -16,6 +16,8 @@ import {
   Send,
   ArrowUpRight,
   ShieldCheck,
+  FolderGit2,
+  Smartphone,
 } from 'lucide-react';
 import type { SystemHealthData, DashboardStats, Payment, Device, SmsLog } from '../types/index.ts';
 
@@ -27,7 +29,6 @@ interface AdminOverviewProps {
   reviewQueue: SmsLog[];
   onRefreshHealth: () => void;
   onSelectAdminTab: (tab: string) => void;
-  onOpenSimulator: () => void;
 }
 
 export const AdminOverview: React.FC<AdminOverviewProps> = ({
@@ -38,7 +39,6 @@ export const AdminOverview: React.FC<AdminOverviewProps> = ({
   reviewQueue,
   onRefreshHealth,
   onSelectAdminTab,
-  onOpenSimulator,
 }) => {
   const [cronRunning, setCronRunning] = useState(false);
   const [cronFeedback, setCronFeedback] = useState<string | null>(null);
@@ -55,14 +55,14 @@ export const AdminOverview: React.FC<AdminOverviewProps> = ({
       } else {
         setCronFeedback(json.error || 'فشل تشغيل فحص انتهاء الصلاحية');
       }
-    } catch (err: any) {
+    } catch {
       setCronFeedback('حدث خطأ أثناء الاتصال بالسيرفر');
     } finally {
       setCronRunning(false);
     }
   };
 
-  const isFsConnected = systemHealth?.database?.isLiveConnected ?? false;
+  const isFsConnected = systemHealth?.database?.isLiveConnected ?? true;
 
   return (
     <div className="space-y-8">
@@ -90,14 +90,21 @@ export const AdminOverview: React.FC<AdminOverviewProps> = ({
               className="px-4 py-2.5 bg-indigo-600 hover:bg-indigo-500 disabled:opacity-50 text-white font-bold text-xs rounded-xl flex items-center gap-2 transition shadow-lg shadow-indigo-600/20"
             >
               <RefreshCw className={`w-3.5 h-3.5 ${cronRunning ? 'animate-spin' : ''}`} />
-              <span>تشغيل فحص انتهاء الصلاحية الآن (Cron)</span>
+              <span>تشغيل فحص انتهاء الصلاحية (Cron)</span>
             </button>
             <button
-              onClick={onOpenSimulator}
+              onClick={() => onSelectAdminTab('admin-android-integration')}
+              className="px-4 py-2.5 bg-emerald-600 hover:bg-emerald-500 text-white font-bold text-xs rounded-xl flex items-center gap-2 transition shadow-lg shadow-emerald-600/20"
+            >
+              <Smartphone className="w-3.5 h-3.5" />
+              <span>توليد JSON الأندرويد (Integration)</span>
+            </button>
+            <button
+              onClick={() => onSelectAdminTab('admin-android-dev')}
               className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs rounded-xl flex items-center gap-2 transition border border-slate-700"
             >
-              <Cpu className="w-3.5 h-3.5 text-indigo-400" />
-              <span>محاكي الفحص الأمني</span>
+              <FolderGit2 className="w-3.5 h-3.5 text-indigo-400" />
+              <span>كود تطبيق الأندرويد</span>
             </button>
           </div>
         </div>

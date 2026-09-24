@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { Navbar } from './components/Navbar.tsx';
 import { DashboardOverview } from './components/DashboardOverview.tsx';
 import { PaymentsList } from './components/PaymentsList.tsx';
@@ -9,8 +9,8 @@ import { ApiDocsTab } from './components/ApiDocsTab.tsx';
 import { CheckoutPage } from './components/CheckoutPage.tsx';
 import { CreatePaymentModal } from './components/CreatePaymentModal.tsx';
 import { DevicePairingModal } from './components/DevicePairingModal.tsx';
-import { SmsSimulatorModal } from './components/SmsSimulatorModal.tsx';
 import { AdminPortal } from './components/AdminPortal.tsx';
+import { LoginPage } from './components/LoginPage.tsx';
 import { AuthProvider, useAuth } from './context/AuthContext.tsx';
 import type {
   Payment,
@@ -212,10 +212,9 @@ function AppContent() {
   // Modals
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [pairModalOpen, setPairModalOpen] = useState(false);
-  const [simulatorOpen, setSimulatorOpen] = useState(false);
 
   // Helper for resilient API calls with authenticated Merchant ID
-  const safeFetch = async <T,>(url: string, fallback: T): Promise<T> => {
+  const safeFetch = useCallback(async <T,>(url: string, fallback: T): Promise<T> => {
     try {
       const headers: Record<string, string> = {
         'x-merchant-id': currentMerchantId,
@@ -230,10 +229,10 @@ function AppContent() {
     } catch {
       return fallback;
     }
-  };
+  }, [currentMerchantId, user?.email]);
 
-  // Fetch all dashboard and system data
-  const fetchDashboardData = async () => {
+  // Fetch all dashboard and system data with smart caching
+  const fetchDashboardData = useCallback(async () => {
     try {
       const [
         overviewRes,
@@ -277,9 +276,9 @@ function AppContent() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [safeFetch]);
 
-  const fetchHealthOnly = async () => {
+  const fetchHealthOnly = useCallback(async () => {
     try {
       const res = await fetch('/api/admin/system-health');
       if (res.ok) {
@@ -289,14 +288,20 @@ function AppContent() {
     } catch {
       // Quietly ignore transient health check error
     }
-  };
+  }, []);
 
   useEffect(() => {
     fetchDashboardData();
-    // Background polling every 10 seconds to keep live data fresh
-    const interval = setInterval(fetchDashboardData, 10000);
+
+    // Free-tier optimization: smart polling only when the tab is actively visible
+    const interval = setInterval(() => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+        fetchDashboardData();
+      }
+    }, 12000);
+
     return () => clearInterval(interval);
-  }, [currentMerchantId, user?.email]);
+  }, [fetchDashboardData]);
 
   // Handle URL change or history popstate
   useEffect(() => {
@@ -348,32 +353,20 @@ function AppContent() {
   // 2. If viewing the Admin Supervision & Operations Center (/admin)
   if (isAdminView) {
     return (
-      <>
-        <AdminPortal
-          stats={stats}
-          systemHealth={systemHealth}
-          payments={payments}
-          devices={devices}
-          wallets={wallets}
-          smsLogs={smsLogs}
-          reviewQueue={reviewQueue}
-          webhookLogs={webhookLogs}
-          auditLogs={auditLogs}
-          onRefreshAll={fetchDashboardData}
-          onRefreshHealth={fetchHealthOnly}
-          onSwitchToMerchantPortal={switchToMerchant}
-          onOpenSimulator={() => setSimulatorOpen(true)}
-        />
-
-        {/* Global Simulator Modal also usable from admin */}
-        <SmsSimulatorModal
-          isOpen={simulatorOpen}
-          onClose={() => setSimulatorOpen(false)}
-          devices={devices}
-          pendingPayments={payments.filter((p) => p.status === 'pending')}
-          onSmsProcessed={fetchDashboardData}
-        />
-      </>
+      <AdminPortal
+        stats={stats}
+        systemHealth={systemHealth}
+        payments={payments}
+        devices={devices}
+        wallets={wallets}
+        smsLogs={smsLogs}
+        reviewQueue={reviewQueue}
+        webhookLogs={webhookLogs}
+        auditLogs={auditLogs}
+        onRefreshAll={fetchDashboardData}
+        onRefreshHealth={fetchHealthOnly}
+        onSwitchToMerchantPortal={switchToMerchant}
+      />
     );
   }
 
@@ -385,7 +378,7 @@ function AppContent() {
         currentTab={currentMerchantTab}
         onSelectTab={setCurrentMerchantTab}
         onOpenCreateModal={() => setCreateModalOpen(true)}
-        onOpenSimulator={() => setSimulatorOpen(true)}
+        onRefreshData={fetchDashboardData}
         onSwitchToAdmin={switchToAdmin}
       />
 
@@ -398,7 +391,6 @@ function AppContent() {
             devices={devices}
             onOpenCreateModal={() => setCreateModalOpen(true)}
             onOpenPairModal={() => setPairModalOpen(true)}
-            onOpenSimulator={() => setSimulatorOpen(true)}
             onOpenCheckout={openCheckout}
             onSelectTab={setCurrentMerchantTab}
           />
@@ -413,7 +405,6 @@ function AppContent() {
             devices={devices}
             wallets={wallets}
             onOpenPairModal={() => setPairModalOpen(true)}
-            onOpenSimulator={() => setSimulatorOpen(true)}
             onRefresh={fetchDashboardData}
           />
         )}
@@ -433,6 +424,13 @@ function AppContent() {
         {currentMerchantTab === 'docs' && (
           <ApiDocsTab apiKeys={apiKeys} merchant={merchant} wallets={wallets} />
         )}
+
+        {currentMerchantTab === 'login' && (
+          <LoginPage
+            onNavigateToMerchant={() => setCurrentMerchantTab('overview')}
+            onNavigateToAdmin={switchToAdmin}
+          />
+        )}
       </main>
 
       {/* Merchant Modals */}
@@ -450,14 +448,6 @@ function AppContent() {
         isOpen={pairModalOpen}
         onClose={() => setPairModalOpen(false)}
         onDevicePaired={fetchDashboardData}
-      />
-
-      <SmsSimulatorModal
-        isOpen={simulatorOpen}
-        onClose={() => setSimulatorOpen(false)}
-        devices={devices}
-        pendingPayments={payments.filter((p) => p.status === 'pending')}
-        onSmsProcessed={fetchDashboardData}
       />
 
       {/* Merchant Global Footer */}

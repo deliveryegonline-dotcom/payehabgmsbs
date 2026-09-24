@@ -8,6 +8,7 @@ import { AuditLogsTab } from './AuditLogsTab.tsx';
 import { AdminMerchantsTab } from './AdminMerchantsTab.tsx';
 import { AdminEnvAndroidTab } from './AdminEnvAndroidTab.tsx';
 import { AdminAndroidDevCenter } from './AdminAndroidDevCenter.tsx';
+import { AdminAndroidIntegrationPanel } from './AdminAndroidIntegrationPanel.tsx';
 import { ShieldAlert, ArrowLeft, LogIn } from 'lucide-react';
 import { useAuth } from '../context/AuthContext.tsx';
 import type {
@@ -34,7 +35,6 @@ interface AdminPortalProps {
   onRefreshAll: () => void;
   onRefreshHealth: () => void;
   onSwitchToMerchantPortal: () => void;
-  onOpenSimulator: () => void;
 }
 
 export const AdminPortal: React.FC<AdminPortalProps> = ({
@@ -50,7 +50,6 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
   onRefreshAll,
   onRefreshHealth,
   onSwitchToMerchantPortal,
-  onOpenSimulator,
 }) => {
   const [adminTab, setAdminTab] = useState<string>('admin-overview');
   const { user, isAdmin, signInWithGoogle } = useAuth();
@@ -65,7 +64,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
           currentTab={adminTab}
           onSelectTab={setAdminTab}
           reviewCount={0}
-          onOpenSimulator={onOpenSimulator}
+          onRefreshAll={onRefreshAll}
           onSwitchToMerchantPortal={onSwitchToMerchantPortal}
         />
         <main className="max-w-xl mx-auto px-4 py-20 flex-1 flex flex-col items-center justify-center text-center">
@@ -107,7 +106,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
           currentTab={adminTab}
           onSelectTab={setAdminTab}
           reviewCount={0}
-          onOpenSimulator={onOpenSimulator}
+          onRefreshAll={onRefreshAll}
           onSwitchToMerchantPortal={onSwitchToMerchantPortal}
         />
         <main className="max-w-2xl mx-auto px-4 py-20 flex-1 flex flex-col items-center justify-center text-center">
@@ -146,7 +145,7 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
         currentTab={adminTab}
         onSelectTab={setAdminTab}
         reviewCount={reviewQueue.length}
-        onOpenSimulator={onOpenSimulator}
+        onRefreshAll={onRefreshAll}
         onSwitchToMerchantPortal={onSwitchToMerchantPortal}
       />
 
@@ -161,7 +160,14 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
             reviewQueue={reviewQueue}
             onRefreshHealth={onRefreshHealth}
             onSelectAdminTab={setAdminTab}
-            onOpenSimulator={onOpenSimulator}
+          />
+        )}
+
+        {adminTab === 'admin-android-integration' && (
+          <AdminAndroidIntegrationPanel
+            devices={devices}
+            wallets={wallets}
+            onRefreshAll={onRefreshAll}
           />
         )}
 

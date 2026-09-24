@@ -7,12 +7,13 @@ import {
   Send,
   Shield,
   Users,
-  Play,
+  RefreshCw,
   ArrowRight,
   Menu,
   X,
   Zap,
   FolderGit2,
+  Smartphone,
   LogOut,
   LogIn,
   User as UserIcon,
@@ -23,7 +24,7 @@ interface AdminNavbarProps {
   currentTab: string;
   onSelectTab: (tab: string) => void;
   reviewCount: number;
-  onOpenSimulator: () => void;
+  onRefreshAll?: () => void;
   onSwitchToMerchantPortal: () => void;
 }
 
@@ -31,11 +32,20 @@ export const AdminNavbar: React.FC<AdminNavbarProps> = ({
   currentTab,
   onSelectTab,
   reviewCount,
-  onOpenSimulator,
+  onRefreshAll,
   onSwitchToMerchantPortal,
 }) => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const { user, isAdmin, signInWithGoogle, logout } = useAuth();
+
+  const handleRefreshClick = () => {
+    if (onRefreshAll) {
+      setIsRefreshing(true);
+      onRefreshAll();
+      setTimeout(() => setIsRefreshing(false), 800);
+    }
+  };
 
   const adminNavItems = [
     { id: 'admin-overview', label: 'صحة المنظومة والمراقبة', icon: LayoutDashboard },
@@ -45,6 +55,7 @@ export const AdminNavbar: React.FC<AdminNavbarProps> = ({
       icon: AlertTriangle,
       badge: reviewCount > 0 ? reviewCount : null,
     },
+    { id: 'admin-android-integration', label: 'تكامل وتوليد JSON الأندرويد', icon: Smartphone },
     { id: 'admin-android-dev', label: 'كود تطبيق الأندرويد المفتوح', icon: FolderGit2 },
     { id: 'admin-sms', label: 'فحص وتدقيق SMS', icon: Layers },
     { id: 'admin-webhooks', label: 'مراقبة الويب هوك', icon: Send },
@@ -106,13 +117,17 @@ export const AdminNavbar: React.FC<AdminNavbarProps> = ({
 
           {/* Switch to Merchant Portal & Actions */}
           <div className="hidden sm:flex items-center gap-2.5">
-            <button
-              onClick={onOpenSimulator}
-              className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 text-xs font-semibold rounded-xl flex items-center gap-1.5 transition border border-slate-700"
-            >
-              <Play className="w-3 h-3 fill-current text-indigo-400" />
-              <span>محاكي الفحص</span>
-            </button>
+            {onRefreshAll && (
+              <button
+                onClick={handleRefreshClick}
+                disabled={isRefreshing}
+                className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 disabled:opacity-50 text-slate-200 text-xs font-semibold rounded-xl flex items-center gap-1.5 transition border border-slate-700"
+                title="تحديث ومزامنة المنظومة لحظياً"
+              >
+                <RefreshCw className={`w-3.5 h-3.5 text-indigo-400 ${isRefreshing ? 'animate-spin' : ''}`} />
+                <span>مزامنة شاملة</span>
+              </button>
+            )}
 
             <button
               onClick={onSwitchToMerchantPortal}

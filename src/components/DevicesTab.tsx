@@ -5,7 +5,6 @@ import {
   CheckCircle2,
   Clock,
   ShieldCheck,
-  Play,
   Wallet,
   Download,
   Check,
@@ -19,7 +18,6 @@ interface DevicesTabProps {
   devices: Device[];
   wallets: WalletType[];
   onOpenPairModal: () => void;
-  onOpenSimulator: () => void;
   onRefresh: () => void;
 }
 
@@ -27,13 +25,19 @@ export const DevicesTab: React.FC<DevicesTabProps> = ({
   devices,
   wallets,
   onOpenPairModal,
-  onOpenSimulator,
   onRefresh,
 }) => {
   const [bindingDeviceId, setBindingDeviceId] = useState<string | null>(null);
   const [selectedWalletIds, setSelectedWalletIds] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
   const [feedback, setFeedback] = useState<string | null>(null);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const handleRefreshClick = () => {
+    setRefreshing(true);
+    onRefresh();
+    setTimeout(() => setRefreshing(false), 800);
+  };
 
   const handleOpenBinding = (device: Device) => {
     setBindingDeviceId(device.id);
@@ -135,11 +139,13 @@ export const DevicesTab: React.FC<DevicesTabProps> = ({
 
         <div className="flex flex-wrap gap-2">
           <button
-            onClick={onOpenSimulator}
-            className="px-3.5 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs rounded-xl flex items-center gap-1.5 transition border border-slate-700/60"
+            onClick={handleRefreshClick}
+            disabled={refreshing}
+            className="px-3.5 py-2.5 bg-slate-800 hover:bg-slate-700 disabled:opacity-50 text-slate-200 font-semibold text-xs rounded-xl flex items-center gap-1.5 transition border border-slate-700/60"
+            title="تحديث حالة الأجهزة والاتصال"
           >
-            <Play className="w-3.5 h-3.5 fill-current text-emerald-400" />
-            <span>تشغيل محاكي الهاتف</span>
+            <RefreshCw className={`w-3.5 h-3.5 text-emerald-400 ${refreshing ? 'animate-spin' : ''}`} />
+            <span>مزامنة الأجهزة</span>
           </button>
           <button
             onClick={onOpenPairModal}

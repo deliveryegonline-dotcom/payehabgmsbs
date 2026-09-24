@@ -9,7 +9,6 @@ import {
   ArrowUpRight,
   ExternalLink,
   Plus,
-  Play,
   ShieldCheck,
   Key,
   QrCode,
@@ -26,7 +25,6 @@ interface DashboardOverviewProps {
   devices: Device[];
   onOpenCreateModal: () => void;
   onOpenPairModal: () => void;
-  onOpenSimulator: () => void;
   onOpenCheckout: (paymentId: string) => void;
   onSelectTab: (tab: string) => void;
 }
@@ -37,7 +35,6 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
   devices,
   onOpenCreateModal,
   onOpenPairModal,
-  onOpenSimulator,
   onOpenCheckout,
   onSelectTab,
 }) => {
@@ -68,11 +65,11 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
             إنشاء دفعة جديدة
           </button>
           <button
-            onClick={onOpenSimulator}
+            onClick={onOpenPairModal}
             className="px-4 py-3 bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold text-xs rounded-xl flex items-center gap-2 transition border border-slate-700/60"
           >
-            <Play className="w-4 h-4 fill-current text-emerald-400" />
-            تجربة محاكي الدفع
+            <Smartphone className="w-4 h-4 text-emerald-400" />
+            ربط هاتف أندرويد بالـ QR
           </button>
         </div>
       </div>
@@ -164,20 +161,20 @@ export const DashboardOverview: React.FC<DashboardOverviewProps> = ({
 
           {/* Step 3 */}
           <div
-            onClick={onOpenSimulator}
+            onClick={onOpenCreateModal}
             className="p-4 bg-slate-950/80 border border-slate-800 hover:border-emerald-500/40 rounded-2xl cursor-pointer transition group"
           >
             <div className="flex items-center justify-between mb-2">
               <span className="w-6 h-6 rounded-lg bg-emerald-500/10 text-emerald-400 font-bold text-xs flex items-center justify-center">
                 3
               </span>
-              <Play className="w-4 h-4 text-slate-400 group-hover:text-emerald-400 transition" />
+              <CreditCard className="w-4 h-4 text-slate-400 group-hover:text-emerald-400 transition" />
             </div>
             <h4 className="text-xs font-bold text-white group-hover:text-emerald-300">
-              تجربة المحاكي
+              إنشاء رابط دفع وتخصيص القروش
             </h4>
             <p className="text-[11px] text-slate-400 mt-1">
-              أرسل رسالة تجريبية للتأكد من وصول الإشعار وتأكيد الدفعة فوراً.
+              ولّد رابط دفع حقيقي `/c/:id` لتجربة دورة التأكيد الفوري للعميل.
             </p>
           </div>
 
