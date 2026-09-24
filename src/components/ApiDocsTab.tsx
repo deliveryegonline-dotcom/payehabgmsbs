@@ -1,8 +1,19 @@
 import React, { useState } from 'react';
-import { BookOpen, Copy, Check, Terminal, Code2, Globe, FileCode, Smartphone, Zap } from 'lucide-react';
+import { BookOpen, Copy, Check, Terminal, Code2, Globe, FileCode, Smartphone, Zap, Key } from 'lucide-react';
+import type { ApiKey, Wallet } from '../types/index.ts';
 
-export const ApiDocsTab: React.FC = () => {
+interface ApiDocsTabProps {
+  apiKeys?: ApiKey[];
+  merchant?: { id: string; name: string; email: string };
+  wallets?: Wallet[];
+}
+
+export const ApiDocsTab: React.FC<ApiDocsTabProps> = ({ apiKeys = [], merchant, wallets = [] }) => {
   const [copiedSection, setCopiedSection] = useState<string | null>(null);
+
+  const activeApiKey = apiKeys[0]?.publicKey || 'pk_live_ehabgm_demo_7721';
+  const defaultWallet = wallets.find((w) => w.isDefault && w.isActive) || wallets[0];
+  const walletNumber = defaultWallet?.identifier || '01012345678';
 
   const handleCopy = (sec: string, text: string) => {
     navigator.clipboard.writeText(text);
@@ -24,7 +35,7 @@ export const ApiDocsTab: React.FC = () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': 'Bearer YOUR_API_KEY' // استبدل بمفتاح الـ API الخاص بمتجرك
+          'Authorization': 'Bearer ${activeApiKey}' // مفتاح API المخصص لمتجرك
         },
         body: JSON.stringify({
           orderRef: 'ORD-' + Math.floor(Math.random() * 90000 + 10000),
@@ -48,9 +59,10 @@ export const ApiDocsTab: React.FC = () => {
   const phpWooSnippet = `<?php
 /**
  * إضافة كود استقبال مدفوعات فودافون كاش وإنستاباي لموقع ووكومرس أو PHP
+ * متجر: ${merchant?.name || 'متجري'} | محفظة: ${walletNumber}
  */
 function ehabgm_create_wallet_payment($order_id, $amount, $customer_phone) {
-    $api_key = 'YOUR_MERCHANT_API_KEY';
+    $api_key = '${activeApiKey}';
     $gateway_url = '${window.location.origin}/api/merchant/payments/create';
 
     $payload = array(
@@ -83,7 +95,7 @@ function ehabgm_create_wallet_payment($order_id, $amount, $customer_phone) {
 }
 ?>`;
 
-  const nodeCreatePayment = `// 1. إنشاء الدفعة المخصصة بالقروش
+  const nodeCreatePayment = `// 1. إنشاء الدفعة المخصصة بالقروش لمتجر ${merchant?.name || 'الحساب الحالي'}
 import axios from 'axios';
 
 const res = await axios.post('${window.location.origin}/api/merchant/payments/create', {
@@ -93,7 +105,7 @@ const res = await axios.post('${window.location.origin}/api/merchant/payments/cr
   webhookUrl: 'https://mystore.com/api/webhooks/ehabgm'
 }, {
   headers: {
-    'Authorization': 'Bearer ' + process.env.EHABGM_API_KEY,
+    'Authorization': 'Bearer ${activeApiKey}',
     'Content-Type': 'application/json'
   }
 });

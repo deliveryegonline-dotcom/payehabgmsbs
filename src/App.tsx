@@ -430,7 +430,9 @@ function AppContent() {
           <ApiKeysTab apiKeys={apiKeys} merchant={merchant} onRefresh={fetchDashboardData} />
         )}
 
-        {currentMerchantTab === 'docs' && <ApiDocsTab />}
+        {currentMerchantTab === 'docs' && (
+          <ApiDocsTab apiKeys={apiKeys} merchant={merchant} wallets={wallets} />
+        )}
       </main>
 
       {/* Merchant Modals */}

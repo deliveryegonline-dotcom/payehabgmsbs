@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   ShieldCheck,
   Clock,
@@ -12,6 +12,11 @@ import {
   Receipt,
   QrCode,
   Check,
+  Upload,
+  Image as ImageIcon,
+  Send,
+  Smartphone,
+  CheckCheck,
 } from 'lucide-react';
 import { QRCodeSVG } from 'qrcode.react';
 import { listenToPaymentStatus } from '../lib/firebaseClient.ts';
@@ -51,8 +56,12 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ paymentId, onBackToD
   const [copiedUssd, setCopiedUssd] = useState(false);
   const [showQr, setShowQr] = useState(false);
 
-  // Manual verification
+  // Manual & Proof verification state
+  const [senderPhone, setSenderPhone] = useState('');
+  const [senderName, setSenderName] = useState('');
   const [manualTxnId, setManualTxnId] = useState('');
+  const [screenshotPreview, setScreenshotPreview] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [verifying, setVerifying] = useState(false);
   const [verifyMessage, setVerifyMessage] = useState<{ type: 'success' | 'info' | 'error'; text: string } | null>(null);
 
@@ -149,9 +158,27 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ paymentId, onBackToD
     }
   };
 
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        setVerifyMessage({ type: 'error', text: 'حجم الصورة يجب ألا يتجاوز 5 ميجابايت' });
+        return;
+      }
+      const reader = new FileReader();
+      reader.onload = () => {
+        setScreenshotPreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handleManualVerify = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!manualTxnId.trim()) return;
+    if (!manualTxnId.trim() && !senderPhone.trim() && !screenshotPreview) {
+      setVerifyMessage({ type: 'error', text: 'يرجى إدخال رقم العملية أو رقم هاتفك المحول منه أو إرفاق صورة التحويل' });
+      return;
+    }
 
     try {
       setVerifying(true);
@@ -160,7 +187,13 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ paymentId, onBackToD
       const res = await fetch(`/api/v1/payments/${paymentId}/verify`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ transactionId: manualTxnId.trim() }),
+        body: JSON.stringify({
+          transactionId: manualTxnId.trim() || undefined,
+          senderPhone: senderPhone.trim() || undefined,
+          senderName: senderName.trim() || undefined,
+          receiptScreenshot: screenshotPreview || undefined,
+          amountPaid: payment?.payableAmount,
+        }),
       });
 
       const data = await res.json();
@@ -171,7 +204,7 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ paymentId, onBackToD
         } else {
           setVerifyMessage({
             type: 'info',
-            text: 'تم استلام رقم العملية وجاري مطابقتها مع رسائل المحفظة في ثوانٍ...',
+            text: 'تم استلام بيانات التحويل وإشعار الدفع بنجاح! جاري المطابقة والتأكيد التلقائي عبر المنصة أو المشرف.',
           });
         }
       } else {
@@ -479,44 +512,117 @@ export const CheckoutPage: React.FC<CheckoutPageProps> = ({ paymentId, onBackToD
               </div>
             </div>
 
-            {/* Alternative Manual Verification Form */}
-            <div className="bg-slate-900/70 border border-slate-800/80 rounded-2xl p-4">
-              <details className="group">
-                <summary className="cursor-pointer text-xs font-semibold text-slate-300 hover:text-emerald-400 flex items-center justify-between list-none">
-                  <span>لم يتم التأكيد تلقائياً بعد التحويل؟ اضغط هنا للتحقق برقم العملية</span>
+            {/* Alternative Manual Verification & Customer Proof Form */}
+            <div className="bg-slate-900/80 border border-slate-800/90 rounded-2xl p-4 shadow-xl">
+              <details className="group" open>
+                <summary className="cursor-pointer text-xs font-bold text-slate-200 hover:text-emerald-400 flex items-center justify-between list-none">
+                  <span className="flex items-center gap-2">
+                    <Smartphone className="w-4 h-4 text-emerald-400" />
+                    <span>تأكيد التحويل يدوياً / إرفاق إثبات الدفع وسكرين شوت</span>
+                  </span>
                   <span className="text-slate-500 group-open:rotate-180 transition-transform">▼</span>
                 </summary>
 
-                <form onSubmit={handleManualVerify} className="mt-4 pt-3 border-t border-slate-800/80 space-y-3">
-                  <p className="text-[11px] text-slate-400">
-                    أدخل رقم العملية (Transaction ID) المكتوب في رسالة الـ SMS التي وصلتك من فودافون كاش للتحقق الفوري:
+                <form onSubmit={handleManualVerify} className="mt-4 pt-3 border-t border-slate-800/80 space-y-3.5">
+                  <p className="text-[11px] text-slate-400 leading-relaxed">
+                    إذا قمت بالتحويل ولم تتغير الصفحة فوراً، يمكنك إدخال رقم هاتفك المحول منه أو رقم العملية في الرسالة، أو إرفاق صورة التحويل للتأكيد المباشر:
                   </p>
-                  <div className="flex gap-2">
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-[11px] font-medium text-slate-400 mb-1">
+                        رقم الهاتف المحول منه أو عنوان إنستاباي
+                      </label>
+                      <input
+                        type="text"
+                        value={senderPhone}
+                        onChange={(e) => setSenderPhone(e.target.value)}
+                        placeholder="مثال: 01012345678 أو username@instapay"
+                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-emerald-500 font-mono"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-[11px] font-medium text-slate-400 mb-1">
+                        رقم العملية المرجعي (Transaction ID من الـ SMS)
+                      </label>
+                      <input
+                        type="text"
+                        value={manualTxnId}
+                        onChange={(e) => setManualTxnId(e.target.value)}
+                        placeholder="مثال: 987654321"
+                        className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-emerald-500 font-mono"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-medium text-slate-400 mb-1">
+                      اسم المحول الثلاثي (اختياري لتوثيق الفاتورة)
+                    </label>
                     <input
                       type="text"
-                      value={manualTxnId}
-                      onChange={(e) => setManualTxnId(e.target.value)}
-                      placeholder="مثال: 1234567890"
-                      className="flex-1 bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-sm text-white placeholder-slate-600 focus:outline-none focus:border-emerald-500 font-mono"
+                      value={senderName}
+                      onChange={(e) => setSenderName(e.target.value)}
+                      placeholder="مثال: أحمد محمد علي"
+                      className="w-full bg-slate-950 border border-slate-800 rounded-xl px-3 py-2 text-xs text-white placeholder-slate-600 focus:outline-none focus:border-emerald-500"
                     />
-                    <button
-                      type="submit"
-                      disabled={verifying || !manualTxnId.trim()}
-                      className="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-bold text-xs rounded-xl transition flex items-center gap-1.5"
-                    >
-                      {verifying ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : null}
-                      تأكيد العملية
-                    </button>
                   </div>
+
+                  {/* Screenshot Upload with Preview */}
+                  <div>
+                    <label className="block text-[11px] font-medium text-slate-400 mb-1">
+                      إرفاق لقطة شاشة للتحويل أو إيصال الدفع (اختياري وسريع)
+                    </label>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      ref={fileInputRef}
+                      onChange={handleFileUpload}
+                      className="hidden"
+                    />
+                    <div className="flex items-center gap-3">
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        className="py-2 px-3 bg-slate-950 hover:bg-slate-800 border border-dashed border-slate-700 hover:border-emerald-500 rounded-xl text-xs text-slate-300 flex items-center gap-2 transition"
+                      >
+                        <Upload className="w-3.5 h-3.5 text-emerald-400" />
+                        <span>{screenshotPreview ? 'تغيير الصورة المرفقة' : 'اختر صورة الإيصال'}</span>
+                      </button>
+                      {screenshotPreview && (
+                        <div className="flex items-center gap-2 bg-slate-950/80 px-2.5 py-1 rounded-lg border border-emerald-500/40">
+                          <ImageIcon className="w-3.5 h-3.5 text-emerald-400" />
+                          <span className="text-[11px] text-emerald-300">تم إرفاق الإيصال بنجاح</span>
+                          <button
+                            type="button"
+                            onClick={() => setScreenshotPreview(null)}
+                            className="text-[10px] text-red-400 hover:text-red-300 ml-1 font-bold"
+                          >
+                            × إلغاء
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  <button
+                    type="submit"
+                    disabled={verifying || (!manualTxnId.trim() && !senderPhone.trim() && !screenshotPreview)}
+                    className="w-full py-2.5 bg-emerald-600 hover:bg-emerald-500 disabled:opacity-50 text-white font-bold text-xs rounded-xl transition flex items-center justify-center gap-2 shadow-lg shadow-emerald-600/20"
+                  >
+                    {verifying ? <RefreshCw className="w-4 h-4 animate-spin" /> : <CheckCheck className="w-4 h-4" />}
+                    <span>إرسال إثبات التحويل وتأكيد الدفعة</span>
+                  </button>
 
                   {verifyMessage && (
                     <div
-                      className={`text-xs p-2.5 rounded-xl border ${
+                      className={`text-xs p-3 rounded-xl border ${
                         verifyMessage.type === 'success'
-                          ? 'bg-emerald-950/60 border-emerald-500/40 text-emerald-300'
+                          ? 'bg-emerald-950/80 border-emerald-500/40 text-emerald-300'
                           : verifyMessage.type === 'info'
-                          ? 'bg-blue-950/60 border-blue-500/40 text-blue-300'
-                          : 'bg-red-950/60 border-red-500/40 text-red-300'
+                          ? 'bg-blue-950/80 border-blue-500/40 text-blue-300'
+                          : 'bg-red-950/80 border-red-500/40 text-red-300'
                       }`}
                     >
                       {verifyMessage.text}

@@ -25,7 +25,11 @@ export const deviceSmsSchema = z.object({
 });
 
 export const verifyPaymentTransactionSchema = z.object({
-  transactionId: z.string().min(4, 'رقم العملية يجب أن يتكون من 4 خانات على الأقل'),
+  transactionId: z.string().optional().or(z.literal('')),
+  senderPhone: z.string().optional().or(z.literal('')),
+  senderName: z.string().optional().or(z.literal('')),
+  receiptScreenshot: z.string().optional().or(z.literal('')),
+  amountPaid: z.number().optional(),
 });
 
 export const manualConfirmSchema = z.object({

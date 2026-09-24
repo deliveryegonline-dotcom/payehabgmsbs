@@ -74,8 +74,9 @@ export const AdminPortal: React.FC<AdminPortalProps> = ({
           </div>
           <h2 className="text-2xl font-black text-white mb-2">تسجيل دخول المدير مطلوب</h2>
           <p className="text-sm text-slate-400 mb-6 leading-relaxed max-w-md">
-            لوحة الإدارة المركزية والتحكم في كود تطبيق الأندرويد محمية ومخصصة للمدير{' '}
-            <span className="text-indigo-400 font-mono font-bold">ehabgm200@gmail.com</span> فقط. يرجى تسجيل الدخول بحسابك للمتابعة.
+            لوحة الإدارة المركزية والتحكم في كود تطبيق الأندرويد محمية ومخصصة لمدير النظام فقط ({' '}
+            <span className="text-indigo-400 font-mono font-bold">ehabgm200@gmail.com</span> /{' '}
+            <span className="text-indigo-400 font-mono font-bold">deliveryegonline@gmail.com</span>). يرجى تسجيل الدخول بحسابك للمتابعة.
           </p>
           <div className="flex flex-col sm:flex-row items-center gap-3 w-full justify-center">
             <button

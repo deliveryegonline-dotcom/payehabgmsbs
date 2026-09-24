@@ -333,44 +333,96 @@ export async function handleCustomerVerifyPayment(req: Request, res: Response) {
       });
     }
 
-    const { transactionId } = valResult.data;
+    const { transactionId, senderPhone, senderName, receiptScreenshot, amountPaid } = valResult.data;
 
-    // Check if an unmatched or review SMS exists with this transaction ID
-    const sms = dbStore.getSmsLogByTransactionId(transactionId);
-    if (sms && sms.merchantId === payment.merchantId) {
-      // If amount matches
-      if (Math.abs(sms.amount - payment.payableAmount) < 0.01) {
-        const nowIso = new Date().toISOString();
-        payment.status = 'completed';
-        payment.confirmedAt = nowIso;
-        payment.matchedSmsId = sms.id;
-        payment.verifiedTransactionId = transactionId;
-        sms.matchStatus = 'matched';
-        sms.matchedPaymentId = payment.id;
-
-        dispatchPaymentWebhook(payment, 'payment.completed').catch(console.error);
-
-        return res.status(200).json({
-          success: true,
-          status: 'completed',
-          message: 'تم التحقق من رقم العملية وتأكيد الدفعة فورياً بنجاح!',
-        });
-      }
+    // 1. Check if an unmatched or review SMS exists with this transaction ID or phone
+    let matchingSms = transactionId ? dbStore.getSmsLogByTransactionId(transactionId) : null;
+    if (!matchingSms && senderPhone) {
+      matchingSms = dbStore.smsLogs.find(
+        (s) =>
+          s.merchantId === payment.merchantId &&
+          s.matchStatus !== 'matched' &&
+          (s.counterpartyPhone === senderPhone || s.rawText.includes(senderPhone)) &&
+          Math.abs(s.amount - payment.payableAmount) < 0.05,
+      ) || null;
     }
 
-    // If not matched immediately, store transaction ID as submitted for manual review
-    payment.verifiedTransactionId = transactionId;
+    if (matchingSms && matchingSms.merchantId === payment.merchantId) {
+      const nowIso = new Date().toISOString();
+      payment.status = 'completed';
+      payment.confirmedAt = nowIso;
+      payment.matchedSmsId = matchingSms.id;
+      payment.verifiedTransactionId = matchingSms.transactionId || transactionId || 'TRX-MANUAL';
+      matchingSms.matchStatus = 'matched';
+      matchingSms.matchedPaymentId = payment.id;
+
+      dispatchPaymentWebhook(payment, 'payment.completed').catch(console.error);
+
+      dbStore.createAuditLog({
+        merchantId: payment.merchantId,
+        actor: 'customer_proof_matched',
+        action: 'payment.completed',
+        details: {
+          paymentId: payment.id,
+          transactionId: payment.verifiedTransactionId,
+          senderPhone,
+          senderName,
+        },
+      });
+
+      return res.status(200).json({
+        success: true,
+        status: 'completed',
+        message: 'تم التحقق من بيانات التحويل ومطابقة العملية وتأكيد الدفعة بنجاح!',
+      });
+    }
+
+    // 2. If SMS hasn't arrived or exact match pending, record proof into Review Queue
+    if (transactionId) {
+      payment.verifiedTransactionId = transactionId;
+    }
+    if (senderPhone) {
+      payment.customerPhone = senderPhone;
+    }
+
+    const reviewLogId = `sms-rev-${crypto.randomUUID().slice(0, 8)}`;
+    const nowIso = new Date().toISOString();
+    
+    // Create an explicit review entry for the merchant dashboard
+    dbStore.smsLogs.push({
+      id: reviewLogId,
+      deviceId: 'manual-customer-entry',
+      merchantId: payment.merchantId,
+      sender: senderName ? `${senderName} (${senderPhone || 'عميل'})` : (senderPhone || 'تحويل عميل مباشر'),
+      rawText: `إشعار إيداع من العميل: رقم المعاملة ${transactionId || 'غير محدد'} - هاتف: ${senderPhone || 'غير محدد'} - المبلغ: ${amountPaid || payment.payableAmount} ج.م ${receiptScreenshot ? '(مرفق إيصال صورة)' : ''}`,
+      amount: amountPaid || payment.payableAmount,
+      counterpartyPhone: senderPhone || null,
+      transactionId: transactionId || `MANUAL-${Date.now().toString().slice(-6)}`,
+      receivedAt: nowIso,
+      matchStatus: 'review',
+      matchedPaymentId: payment.id,
+      reviewReason: `إثبات دفع يدوي مقدم من العميل: ${senderName || ''} (${senderPhone || ''}) بانتظار تأكيد الرسالة أو المشرف`,
+      processedAt: nowIso,
+      createdAt: nowIso,
+    });
+
     dbStore.createAuditLog({
       merchantId: payment.merchantId,
       actor: 'customer',
-      action: 'payment.verify_submitted',
-      details: { paymentId: payment.id, transactionId },
+      action: 'payment.proof_submitted',
+      details: {
+        paymentId: payment.id,
+        transactionId,
+        senderPhone,
+        senderName,
+        hasScreenshot: Boolean(receiptScreenshot),
+      },
     });
 
     return res.status(200).json({
       success: true,
       status: 'pending',
-      message: 'تم استلام رقم العملية وجاري التحقق والمطابقة مع رسائل المحفظة.',
+      message: 'تم استلام بيانات التحويل وإشعار الدفع بنجاح، جاري التحقق التلقائي مع رسائل المحفظة.',
     });
   } catch (err) {
     console.error('[Customer Verify Payment Error]:', err);

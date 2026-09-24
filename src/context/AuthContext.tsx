@@ -17,7 +17,10 @@ interface AuthContextType {
   logout: () => Promise<void>;
 }
 
-const ADMIN_EMAIL = 'ehabgm200@gmail.com';
+const ADMIN_EMAILS = [
+  'deliveryegonline@gmail.com',
+  'ehabgm200@gmail.com',
+];
 
 const AuthContext = createContext<AuthContextType>({
   user: null,
@@ -40,7 +43,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return () => unsubscribe();
   }, []);
 
-  const isAdmin = user?.email?.toLowerCase() === ADMIN_EMAIL.toLowerCase();
+  const isAdmin = user?.email
+    ? ADMIN_EMAILS.some((adm) => adm.toLowerCase() === user.email?.toLowerCase())
+    : false;
   const merchantId = user ? `m-${user.uid.slice(0, 10)}` : 'm-demo-1001';
 
   const signInWithGoogle = async () => {

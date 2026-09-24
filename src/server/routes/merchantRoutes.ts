@@ -7,13 +7,81 @@ import { dispatchPaymentWebhook, executeWebhookWithRetry } from '../services/web
 import { processIncomingDeviceSms } from '../services/smsMatcherService.ts';
 import { isUsingLiveFirestore } from '../firebaseAdmin.ts';
 
-// Extract merchantId or default to demo merchant
+// Extract merchantId or auto-provision for authenticated Google user
 function resolveMerchantId(req: Request): string {
   const authId = authenticateMerchant(req);
   if (authId) return authId;
   const headerId = req.headers['x-merchant-id'] as string;
-  if (headerId && dbStore.getMerchantById(headerId)) {
-    return headerId;
+  const userEmail = req.headers['x-user-email'] as string;
+
+  if (headerId) {
+    let merchant = dbStore.getMerchantById(headerId);
+    if (!merchant && userEmail) {
+      // Auto-provision fresh dynamic profile for this Google Account
+      const now = new Date().toISOString();
+      const merchantName = userEmail.split('@')[0] || 'حساب تاجر';
+      const newMerchant = {
+        id: headerId,
+        name: `متجر ${merchantName}`,
+        email: userEmail,
+        passwordHash: sha256('oauth-google-user'),
+        webhookUrl: '',
+        webhookSecret: `whsec_${crypto.randomBytes(16).toString('hex')}`,
+        status: 'active' as const,
+        createdAt: now,
+        updatedAt: now,
+      };
+      dbStore.merchants.push(newMerchant);
+
+      // Add default wallet for new merchant
+      const newWalletId = `w-${crypto.randomUUID().slice(0, 8)}`;
+      dbStore.wallets.push({
+        id: newWalletId,
+        merchantId: headerId,
+        provider: 'vodafone_cash',
+        identifier: '01012345678',
+        label: 'محفظة فودافون كاش الرئيسية',
+        isActive: true,
+        isDefault: true,
+        createdAt: now,
+      });
+
+      // Add default API key
+      const pubKey = `pk_live_${crypto.randomBytes(8).toString('hex')}`;
+      const secKey = `sk_live_${crypto.randomBytes(16).toString('hex')}`;
+      dbStore.apiKeys.push({
+        id: `k-${crypto.randomUUID().slice(0, 8)}`,
+        merchantId: headerId,
+        name: 'المفتاح الرئيسي للإنتاج (Live Production)',
+        publicKey: pubKey,
+        secretHash: sha256(secKey),
+        prefix: secKey.slice(0, 12) + '...',
+        lastUsedAt: now,
+        revokedAt: null,
+        createdAt: now,
+      });
+
+      // Add paired forwarder device
+      dbStore.devices.push({
+        id: `d-${crypto.randomUUID().slice(0, 8)}`,
+        merchantId: headerId,
+        deviceName: 'هاتف الأندرويد للتحويل',
+        deviceSecret: `sec_dev_${crypto.randomBytes(16).toString('hex')}`,
+        pairingCode: null,
+        pairingCodeExpiresAt: null,
+        isPaired: true,
+        pairedAt: now,
+        lastSeenAt: now,
+        status: 'active',
+        boundWalletIds: [newWalletId],
+        createdAt: now,
+      });
+
+      return headerId;
+    }
+    if (merchant) {
+      return merchant.id;
+    }
   }
   // Default to first merchant (Demo Merchant)
   return dbStore.merchants[0]?.id || 'm-demo-1001';

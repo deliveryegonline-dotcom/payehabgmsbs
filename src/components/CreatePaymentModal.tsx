@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { PlusCircle, X, Copy, ExternalLink, Check, ShieldCheck, RefreshCw } from 'lucide-react';
+import { useAuth } from '../context/AuthContext.tsx';
 import type { Wallet, Payment } from '../types/index.ts';
 
 interface CreatePaymentModalProps {
@@ -17,6 +18,7 @@ export const CreatePaymentModal: React.FC<CreatePaymentModalProps> = ({
   onPaymentCreated,
   onOpenCheckout,
 }) => {
+  const { merchantId, user } = useAuth();
   const [amount, setAmount] = useState('150');
   const [orderRef, setOrderRef] = useState(() => 'ORD-' + Math.floor(10000 + Math.random() * 90000));
   const [customerPhone, setCustomerPhone] = useState('01012345678');
@@ -39,6 +41,8 @@ export const CreatePaymentModal: React.FC<CreatePaymentModalProps> = ({
         headers: {
           'Content-Type': 'application/json',
           Authorization: 'Bearer sk_live_ehabgm_secret_demo_9843',
+          'x-merchant-id': merchantId,
+          ...(user?.email ? { 'x-user-email': user.email } : {}),
         },
         body: JSON.stringify({
           amount: parseFloat(amount),
@@ -46,6 +50,7 @@ export const CreatePaymentModal: React.FC<CreatePaymentModalProps> = ({
           customerPhone: customerPhone || undefined,
           walletId: walletId || undefined,
           webhookUrl: webhookUrl || undefined,
+          merchantId,
         }),
       });
 
